@@ -1,0 +1,20 @@
+{
+  "name": "SMM Pro",
+  "short_name": "SMM Pro",
+  "description": "Muayenehane muhasebe takibi",
+  "theme_color": "#8b6f47",
+  "background_color": "#f5ede0",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/smm-pro/",
+  "scope": "/smm-pro/",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
