@@ -127,3 +127,20 @@ export function odemeSekliLabel(sekil) {
   const map = { nakit: 'Nakit', kart: 'Kart', havale: 'Havale' };
   return map[sekil] || sekil;
 }
+
+// ─── Validasyon Yardımcıları ───────────────────────────────────
+
+export function isRequired(value) {
+  return value !== null && value !== undefined && String(value).trim() !== '';
+}
+
+export function isValidDate(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  return !isNaN(d.getTime());
+}
+
+export function isValidNumber(value, min = 0) {
+  const n = Number(value);
+  return !isNaN(n) && isFinite(n) && n >= min;
+}

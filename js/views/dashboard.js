@@ -5,12 +5,12 @@ function calcMetrics(gelirler, giderler, ay) {
   const ayGelir = gelirler.filter(g => g.tarih.startsWith(ay));
   const ayGider = giderler.filter(x => x.tarih.startsWith(ay));
 
-  const brutGelir = ayGelir.reduce((s, g) => s + (g.brutTutar   || 0), 0);
-  const kdvGelir  = ayGelir.reduce((s, g) => s + (g.kdvTutari   || 0), 0);
-  const topGider  = ayGider.reduce((s, x) => s + (x.netTutar    || 0), 0);
+  const brutGelir = ayGelir.reduce((s, g) => s + (g.brutTutar || 0), 0);
+  const kdvGelir  = ayGelir.reduce((s, g) => s + (g.kdvTutari || 0), 0);
+  const topGider  = ayGider.reduce((s, x) => s + (x.netTutar  || 0), 0);
   const netKar    = brutGelir - topGider;
 
-  return { brutGelir, kdvGelir, topGider, netKar, ayGelir, ayGider };
+  return { brutGelir, kdvGelir, topGider, netKar, ayGelir };
 }
 
 function metricCard(label, value, cls) {
@@ -62,10 +62,10 @@ export default {
       </div>
 
       <div class="metrics-grid">
-        ${metricCard('Brüt Gelir',    brutGelir, 'success')}
-        ${metricCard('Tahsil KDV',    kdvGelir,  'warning')}
-        ${metricCard('Toplam Gider',  topGider,  'danger')}
-        ${metricCard('Net Kar',       netKar,    netKar >= 0 ? 'success' : 'danger')}
+        ${metricCard('Brüt Gelir',   brutGelir, 'success')}
+        ${metricCard('Tahsil KDV',   kdvGelir,  'warning')}
+        ${metricCard('Toplam Gider', topGider,  'danger')}
+        ${metricCard('Net Kar',      netKar,    netKar >= 0 ? 'success' : 'danger')}
       </div>
 
       <div class="section-header">
@@ -78,10 +78,16 @@ export default {
         <span class="section-title">Hızlı İşlem</span>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:4px">
-        <a href="#gelir" class="btn btn-primary">+ Gelir Ekle</a>
+        <button class="btn btn-primary" data-action="add-gelir">+ Gelir Ekle</button>
         <a href="#gider" class="btn btn-secondary">+ Gider Ekle</a>
         <a href="#rapor" class="btn btn-secondary">Raporlar</a>
       </div>
     `;
+  },
+
+  afterRender() {
+    document.querySelector('[data-action="add-gelir"]')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
+    });
   }
 };

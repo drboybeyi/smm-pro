@@ -26,7 +26,7 @@ function gelirItem(g) {
           ${kdvBadge(g.kdvDurumu)}
           ${odemeBadge(g.odemeSekli)}
         </div>
-        ${g.notlar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${g.notlar}</div>` : ''}
+        ${g.notlar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${g.notlar}</div>` : ''}
       </div>
       <div class="list-item-amount income">${formatTL(g.toplamTutar)}</div>
     </div>`;
@@ -34,9 +34,9 @@ function gelirItem(g) {
 
 export default {
   render() {
-    const gelirler = [...getGelirler()].sort((a, b) => b.tarih.localeCompare(a.tarih));
-    const toplamTutar = gelirler.reduce((s, g) => s + (g.toplamTutar || 0), 0);
-    const toplamKDV   = gelirler.reduce((s, g) => s + (g.kdvTutari  || 0), 0);
+    const gelirler  = [...getGelirler()].sort((a, b) => b.tarih.localeCompare(a.tarih));
+    const toplamTah = gelirler.reduce((s, g) => s + (g.toplamTutar || 0), 0);
+    const toplamKDV = gelirler.reduce((s, g) => s + (g.kdvTutari  || 0), 0);
 
     return `
       <div class="section-header" style="margin-top:0">
@@ -47,7 +47,7 @@ export default {
       <div class="card mb-4">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <span style="font-size:13px;color:var(--text-secondary)">Toplam Tahsilat</span>
-          <span style="font-size:18px;font-weight:700;color:var(--success)">${formatTL(toplamTutar)}</span>
+          <span style="font-size:18px;font-weight:700;color:var(--success)">${formatTL(toplamTah)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;color:var(--text-secondary)">Tahsil Edilen KDV</span>
@@ -67,7 +67,7 @@ export default {
 
   afterRender() {
     document.getElementById('btnYeniGelir')?.addEventListener('click', () => {
-      console.log('TODO: Gelir formu açılacak');
+      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
     });
   }
 };
