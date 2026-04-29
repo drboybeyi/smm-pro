@@ -139,20 +139,20 @@ function buildHTML() {
         <label class="form-label">Kategori <span class="req">*</span></label>
         <select class="form-control" id="dgf-kategori">
           <option value="">— Seçiniz —</option>
-          <option value="kira">🏠 Kira</option>
-          <option value="elektrik">⚡ Elektrik</option>
-          <option value="su">💧 Su</option>
-          <option value="dogalgaz">🔥 Doğalgaz</option>
-          <option value="internet">📶 İnternet</option>
-          <option value="telefon">📱 Telefon</option>
-          <option value="personel">👤 Personel</option>
-          <option value="sgk">🏥 SGK</option>
-          <option value="sarf">🧴 Sarf Malzeme</option>
-          <option value="tibbi_malzeme">💉 Tıbbi Malzeme</option>
-          <option value="demirbas">🖥️ Demirbaş</option>
-          <option value="musavir">📋 Müşavir</option>
-          <option value="vergi">📑 Vergi</option>
-          <option value="diger">📦 Diğer</option>
+          <option value="kira">Kira</option>
+          <option value="elektrik">Elektrik</option>
+          <option value="su">Su</option>
+          <option value="dogalgaz">Doğalgaz</option>
+          <option value="internet">İnternet</option>
+          <option value="telefon">Telefon</option>
+          <option value="personel">Personel Maaşı</option>
+          <option value="sgk">SGK/Bağ-Kur</option>
+          <option value="sarf">Sarf Malzeme</option>
+          <option value="tibbi_malzeme">Tıbbi Malzeme</option>
+          <option value="demirbas">Demirbaş</option>
+          <option value="musavir">Mali Müşavir</option>
+          <option value="vergi">Vergi/Harç</option>
+          <option value="diger">Diğer</option>
         </select>
       </div>
 
@@ -162,7 +162,7 @@ function buildHTML() {
           <span class="form-label-opt">(isteğe bağlı)</span>
         </label>
         <input class="form-control" id="dgf-tedarikci" type="text"
-          maxlength="100" placeholder="Firma / kişi adı"
+          maxlength="100" placeholder="Migros, Türk Telekom, vb."
           autocomplete="off" autocorrect="off" autocapitalize="words">
       </div>
 
