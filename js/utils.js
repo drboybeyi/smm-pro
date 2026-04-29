@@ -88,6 +88,22 @@ export function kdvAyristir(toplamTutar, kdvOrani) {
   };
 }
 
+// Gider için: toplam (KDV dahil) → { net, kdv, brut }
+export function kdvAyristirGider(toplamTutarKdvDahil, kdvOrani) {
+  const t = Number(toplamTutarKdvDahil) || 0;
+  const r = Number(kdvOrani) || 0;
+  if (r === 0) {
+    return { net: t, kdv: 0, brut: t };
+  }
+  const net = t / (1 + r / 100);
+  const kdv = t - net;
+  return {
+    net:  Math.round(net * 100) / 100,
+    kdv:  Math.round(kdv * 100) / 100,
+    brut: t
+  };
+}
+
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }

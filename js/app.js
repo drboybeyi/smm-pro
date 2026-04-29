@@ -1,6 +1,7 @@
 import { initState } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openGelirForm } from './components/gelirForm.js';
+import { openGiderForm } from './components/giderForm.js';
 import { show as showToast } from './components/toast.js';
 import Dashboard from './views/dashboard.js';
 import Gelir     from './views/gelir.js';
@@ -85,8 +86,7 @@ function showFabSheet() {
 
   document.getElementById('fbs-gider')?.addEventListener('click', () => {
     close();
-    // Gider formu bir sonraki aşamada eklenecek
-    showToast('Gider formu yakında eklenecek', 'info');
+    openGiderForm();
   });
 }
 
@@ -101,6 +101,11 @@ document.addEventListener('smm:open-gelir-form', () => openGelirForm());
 document.addEventListener('smm:gelir-saved', e => {
   navigate(currentView());
   showToast(`SMM #${e.detail.kayit.smmNo} kaydedildi`, 'success');
+});
+
+document.addEventListener('smm:gider-saved', () => {
+  navigate(currentView());
+  showToast('Gider kaydedildi', 'success');
 });
 
 // ─── Service Worker ────────────────────────────────────────────

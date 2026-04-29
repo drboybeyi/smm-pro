@@ -1,5 +1,6 @@
 import { getGiderler } from '../state.js';
 import { formatTL, formatTarih, kategoriLabel } from '../utils.js';
+import { openGiderForm } from '../components/giderForm.js';
 
 const KATEGORI_ICON = {
   kira: '🏠', elektrik: '⚡', su: '💧', dogalgaz: '🔥',
@@ -78,8 +79,10 @@ export default {
   },
 
   afterRender() {
-    document.getElementById('btnYeniGider')?.addEventListener('click', () => {
-      console.log('TODO: Gider formu açılacak');
+    document.getElementById('btnYeniGider')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openGiderForm();
     });
   }
 };
