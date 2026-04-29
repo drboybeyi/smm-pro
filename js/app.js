@@ -94,7 +94,13 @@ function showFabSheet() {
 
 document.getElementById('fabBtn')?.addEventListener('click', showFabSheet);
 
-// View'lardan gelen "form aç" isteği
+// Event delegation: data-action butonları her render'dan sonra da çalışır
+document.addEventListener('click', e => {
+  const action = e.target.closest('[data-action]')?.dataset.action;
+  if (action === 'add-gelir') openGelirForm();
+});
+
+// View'lardan gelen "form aç" isteği (eski yöntem, geriye dönük uyumluluk)
 document.addEventListener('smm:open-gelir-form', () => openGelirForm());
 
 // Form kaydedildi → mevcut view'ı yenile + toast
