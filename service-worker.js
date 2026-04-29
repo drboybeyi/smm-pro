@@ -1,4 +1,4 @@
-const CACHE = 'smm-pro-v2';
+const CACHE = 'smm-pro-v1';
 const ASSETS = [
   './',
   './index.html',
@@ -11,8 +11,6 @@ const ASSETS = [
   './js/views/gider.js',
   './js/views/raporlar.js',
   './js/views/ayarlar.js',
-  './js/components/gelirForm.js',
-  './js/components/toast.js',
   './js/components/modal.js',
   './manifest.json',
   './assets/icon.svg'
