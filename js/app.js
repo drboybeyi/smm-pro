@@ -107,7 +107,9 @@ document.addEventListener('smm:gelir-saved', e => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => reg.update())   // Her yüklemede SW güncel mi diye kontrol et
+      .catch(() => {});
   });
 }
 

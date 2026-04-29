@@ -1,5 +1,6 @@
 import { getGelirler, getGiderler } from '../state.js';
 import { formatTL, formatTarih, formatAy, bugun } from '../utils.js';
+import { openGelirForm } from '../components/gelirForm.js';
 
 function calcMetrics(gelirler, giderler, ay) {
   const ayGelir = gelirler.filter(g => g.tarih.startsWith(ay));
@@ -78,7 +79,7 @@ export default {
         <span class="section-title">Hızlı İşlem</span>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:4px">
-        <button class="btn btn-primary" data-action="add-gelir">+ Gelir Ekle</button>
+        <button class="btn btn-primary" id="dashGelirBtn" type="button">+ Gelir Ekle</button>
         <a href="#gider" class="btn btn-secondary">+ Gider Ekle</a>
         <a href="#rapor" class="btn btn-secondary">Raporlar</a>
       </div>
@@ -86,8 +87,10 @@ export default {
   },
 
   afterRender() {
-    document.querySelector('[data-action="add-gelir"]')?.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
+    document.getElementById('dashGelirBtn')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openGelirForm();
     });
   }
 };

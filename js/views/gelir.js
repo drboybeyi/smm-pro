@@ -1,5 +1,6 @@
 import { getGelirler } from '../state.js';
 import { formatTL, formatTarih, hizmetTipiLabel, odemeSekliLabel } from '../utils.js';
+import { openGelirForm } from '../components/gelirForm.js';
 
 function kdvBadge(kdvDurumu) {
   if (kdvDurumu === 'muaf') return '<span class="badge badge-muaf">KDV Muaf</span>';
@@ -66,8 +67,10 @@ export default {
   },
 
   afterRender() {
-    document.getElementById('btnYeniGelir')?.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
+    document.getElementById('btnYeniGelir')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      openGelirForm();
     });
   }
 };
