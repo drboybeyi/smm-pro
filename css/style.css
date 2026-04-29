@@ -882,3 +882,70 @@ select.form-control {
   flex-shrink: 0;
   color: var(--accent);
 }
+
+/* ================================================================
+   KATEGORİ EMOJİ GRİD
+   ================================================================ */
+
+.kategori-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 600px) {
+  .kategori-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.kategori-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 6px;
+  min-height: 64px;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.k-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.k-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.kategori-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.kategori-btn[aria-pressed="true"] .k-label {
+  color: #fff;
+}
+
+.kategori-btn:hover:not([aria-pressed="true"]) {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.kategori-grid.error-grid {
+  outline: 1.5px solid var(--danger);
+  border-radius: 10px;
+  padding: 6px;
+}

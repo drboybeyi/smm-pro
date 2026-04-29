@@ -2,12 +2,15 @@ import { getGiderler } from '../state.js';
 import { formatTL, formatTarih, kategoriLabel } from '../utils.js';
 import { openGiderForm } from '../components/giderForm.js';
 
-const KATEGORI_ICON = {
-  kira: '🏠', elektrik: '⚡', su: '💧', dogalgaz: '🔥',
-  internet: '📶', telefon: '📱', personel: '👤', sgk: '🏥',
-  sarf: '🧴', tibbi_malzeme: '💉', demirbas: '🖥️',
-  musavir: '📋', vergi: '📑', diger: '📦'
-};
+function getKategoriEmoji(value) {
+  const map = {
+    kira: '🏠', elektrik: '⚡', su: '💧', dogalgaz: '🔥',
+    internet: '📶', telefon: '☎️', personel: '👤', sgk: '📋',
+    sarf: '📦', tibbi_malzeme: '🩺', demirbas: '🪑',
+    musavir: '📊', vergi: '🏛️', diger: '📌'
+  };
+  return map[value] || '📌';
+}
 
 function belgeLabel(tip) {
   const map = { fatura: 'Fatura', fis: 'Fiş', makbuz: 'Makbuz', belgesiz: 'Belgesiz' };
@@ -15,7 +18,7 @@ function belgeLabel(tip) {
 }
 
 function giderItem(x) {
-  const icon = KATEGORI_ICON[x.kategori] || '📦';
+  const icon = getKategoriEmoji(x.kategori);
   const kdvStr = x.kdvOrani > 0 ? `KDV %${x.kdvOrani}` : 'KDV yok';
   return `
     <div class="list-item">

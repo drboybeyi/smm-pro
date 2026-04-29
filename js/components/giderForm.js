@@ -1,6 +1,23 @@
 import { addGider } from '../state.js';
 import { bugun, kdvAyristirGider, formatTL } from '../utils.js';
 
+const CATEGORIES = [
+  { value: 'kira',          emoji: '🏠', label: 'Kira' },
+  { value: 'elektrik',      emoji: '⚡', label: 'Elektrik' },
+  { value: 'su',            emoji: '💧', label: 'Su' },
+  { value: 'dogalgaz',      emoji: '🔥', label: 'Doğalgaz' },
+  { value: 'internet',      emoji: '📶', label: 'İnternet' },
+  { value: 'telefon',       emoji: '☎️', label: 'Telefon' },
+  { value: 'personel',      emoji: '👤', label: 'Personel' },
+  { value: 'sgk',           emoji: '📋', label: 'SGK/Bağ-Kur' },
+  { value: 'sarf',          emoji: '📦', label: 'Sarf Malzeme' },
+  { value: 'tibbi_malzeme', emoji: '🩺', label: 'Tıbbi Malzeme' },
+  { value: 'demirbas',      emoji: '🪑', label: 'Demirbaş' },
+  { value: 'musavir',       emoji: '📊', label: 'Mali Müşavir' },
+  { value: 'vergi',         emoji: '🏛️', label: 'Vergi/Harç' },
+  { value: 'diger',         emoji: '📌', label: 'Diğer' },
+];
+
 // ─── Canlı KDV Önizlemesi ──────────────────────────────────────
 
 function updatePreview(overlay) {
@@ -52,15 +69,33 @@ function clearFieldError(el) {
   el.parentNode.querySelector('.form-error')?.remove();
 }
 
+function setGridError(gridEl, msg) {
+  if (!gridEl) return;
+  gridEl.classList.add('error-grid');
+  let errEl = gridEl.parentNode.querySelector('.form-error');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.className = 'form-error';
+    gridEl.parentNode.appendChild(errEl);
+  }
+  errEl.textContent = msg;
+}
+
+function clearGridError(gridEl) {
+  if (!gridEl) return;
+  gridEl.classList.remove('error-grid');
+  gridEl.parentNode.querySelector('.form-error')?.remove();
+}
+
 // ─── Validasyon ────────────────────────────────────────────────
 
 function validate(overlay) {
   let firstError = null;
   let valid = true;
 
-  const tarihEl    = overlay.querySelector('#dgf-tarih');
-  const kategoriEl = overlay.querySelector('#dgf-kategori');
-  const tutarEl    = overlay.querySelector('#dgf-tutar');
+  const tarihEl   = overlay.querySelector('#dgf-tarih');
+  const gridEl    = overlay.querySelector('#dgf-kategori-grid');
+  const tutarEl   = overlay.querySelector('#dgf-tutar');
 
   if (!tarihEl?.value) {
     setFieldError(tarihEl, 'Tarih zorunludur');
@@ -70,12 +105,12 @@ function validate(overlay) {
     clearFieldError(tarihEl);
   }
 
-  if (!kategoriEl?.value) {
-    setFieldError(kategoriEl, 'Kategori seçiniz');
-    if (!firstError) firstError = kategoriEl;
+  if (!gridEl?.querySelector('.kategori-btn[aria-pressed="true"]')) {
+    setGridError(gridEl, 'Kategori seçin');
+    if (!firstError) firstError = gridEl;
     valid = false;
   } else {
-    clearFieldError(kategoriEl);
+    clearGridError(gridEl);
   }
 
   const tutarVal = parseFloat(tutarEl?.value || '');
@@ -99,7 +134,7 @@ function validate(overlay) {
 
 function collectData(overlay) {
   const tarih     = overlay.querySelector('#dgf-tarih').value;
-  const kategori  = overlay.querySelector('#dgf-kategori').value;
+  const kategori  = overlay.querySelector('.kategori-btn[aria-pressed="true"]').dataset.value;
   const tedarikci = overlay.querySelector('#dgf-tedarikci').value.trim().slice(0, 100);
   const belgeTipi = overlay.querySelector('#dgf-belge-tipi').value;
   const belgeNo   = overlay.querySelector('#dgf-belge-no').value.trim().slice(0, 50);
@@ -119,6 +154,13 @@ function collectData(overlay) {
 // ─── Form HTML ─────────────────────────────────────────────────
 
 function buildHTML() {
+  const gridBtns = CATEGORIES.map(c => `
+    <button type="button" class="kategori-btn" role="radio"
+      aria-pressed="false" data-value="${c.value}">
+      <span class="k-emoji">${c.emoji}</span>
+      <span class="k-label">${c.label}</span>
+    </button>`).join('');
+
   return `
 <div id="gider-form-overlay" class="modal-overlay">
   <div class="modal-box">
@@ -137,23 +179,9 @@ function buildHTML() {
 
       <div class="form-group">
         <label class="form-label">Kategori <span class="req">*</span></label>
-        <select class="form-control" id="dgf-kategori">
-          <option value="">— Seçiniz —</option>
-          <option value="kira">Kira</option>
-          <option value="elektrik">Elektrik</option>
-          <option value="su">Su</option>
-          <option value="dogalgaz">Doğalgaz</option>
-          <option value="internet">İnternet</option>
-          <option value="telefon">Telefon</option>
-          <option value="personel">Personel Maaşı</option>
-          <option value="sgk">SGK/Bağ-Kur</option>
-          <option value="sarf">Sarf Malzeme</option>
-          <option value="tibbi_malzeme">Tıbbi Malzeme</option>
-          <option value="demirbas">Demirbaş</option>
-          <option value="musavir">Mali Müşavir</option>
-          <option value="vergi">Vergi/Harç</option>
-          <option value="diger">Diğer</option>
-        </select>
+        <div class="kategori-grid" id="dgf-kategori-grid" role="radiogroup" aria-label="Kategori">
+          ${gridBtns}
+        </div>
       </div>
 
       <div class="form-group">
@@ -231,6 +259,25 @@ export function openGiderForm() {
 
   document.body.insertAdjacentHTML('beforeend', buildHTML());
   const overlay = document.getElementById('gider-form-overlay');
+
+  // Kategori grid — tek seçim
+  overlay.querySelector('#dgf-kategori-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.kategori-btn');
+    if (!btn) return;
+    overlay.querySelectorAll('.kategori-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
+    clearGridError(overlay.querySelector('#dgf-kategori-grid'));
+  });
+
+  // Klavye: Space seçer
+  overlay.querySelector('#dgf-kategori-grid').addEventListener('keydown', e => {
+    if (e.key === ' ') {
+      const btn = e.target.closest('.kategori-btn');
+      if (!btn) return;
+      e.preventDefault();
+      btn.click();
+    }
+  });
 
   overlay.querySelector('#dgf-tutar')?.addEventListener('input', () => updatePreview(overlay));
   overlay.querySelector('#dgf-kdv')?.addEventListener('change', () => updatePreview(overlay));
