@@ -41,7 +41,7 @@ export default {
     return `
       <div class="section-header" style="margin-top:0">
         <span class="section-title">Gelir Kayıtları (${gelirler.length})</span>
-        <button class="btn btn-primary btn-sm" data-action="add-gelir">+ Yeni</button>
+        <button class="btn btn-primary btn-sm" id="btnYeniGelir">+ Yeni</button>
       </div>
 
       <div class="card mb-4">
@@ -65,4 +65,9 @@ export default {
     `;
   },
 
+  afterRender() {
+    document.getElementById('btnYeniGelir')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
+    });
+  }
 };

@@ -83,5 +83,11 @@ export default {
         <a href="#rapor" class="btn btn-secondary">Raporlar</a>
       </div>
     `;
+  },
+
+  afterRender() {
+    document.querySelector('[data-action="add-gelir"]')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('smm:open-gelir-form'));
+    });
   }
 };
