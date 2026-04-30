@@ -94,6 +94,11 @@ body {
   color: #b8f0b8;
 }
 
+.sync-status {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
 /* === ANA İÇERİK === */
 #app {
   padding-top: calc(var(--header-h) + 14px);

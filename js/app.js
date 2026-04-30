@@ -1,3 +1,4 @@
+import { initAuth } from './firebase-config.js';
 import { initState } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openGelirForm } from './components/gelirForm.js';
@@ -117,6 +118,26 @@ if ('serviceWorker' in navigator) {
       .catch(() => {});
   });
 }
+
+// ─── Firebase Init ─────────────────────────────────────────────
+
+initAuth()
+  .then((user) => {
+    console.log('[App] Firebase ready, user:', user.uid);
+    const syncIndicator = document.querySelector('.sync-status');
+    if (syncIndicator) {
+      syncIndicator.textContent = '🟢 Bağlı';
+      syncIndicator.style.color = 'var(--success)';
+    }
+  })
+  .catch((err) => {
+    console.error('[App] Firebase auth failed:', err);
+    const syncIndicator = document.querySelector('.sync-status');
+    if (syncIndicator) {
+      syncIndicator.textContent = '🔴 Bağlantı yok';
+      syncIndicator.style.color = 'var(--danger)';
+    }
+  });
 
 // ─── Başlat ────────────────────────────────────────────────────
 
