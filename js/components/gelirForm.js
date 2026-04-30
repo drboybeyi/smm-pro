@@ -1,5 +1,7 @@
-import { getAyarlar, addGelir } from '../state.js';
+import { getAyarlar } from '../state.js';
+import { incrementSmmNo, addGelir } from '../db.js';
 import { bugun, kdvAyristir, formatTL } from '../utils.js';
+import { show as showToast } from './toast.js';
 
 const KDV_DEFAULT = {
   muayene: 'muaf',
@@ -15,6 +17,13 @@ function nextSmmNo() {
 
 function kdvOraniNum(durum) {
   return durum === 'muaf' ? 0 : Number(durum);
+}
+
+function setSyncStatus(text, color) {
+  const el = document.querySelector('.sync-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = color;
 }
 
 // ─── Canlı KDV Önizlemesi ──────────────────────────────────────
@@ -98,7 +107,6 @@ function validate(overlay) {
   const kdvGrp    = overlay.querySelector('.gf-kdv-group');
   const odemeGrp  = overlay.querySelector('.gf-odeme-group');
 
-  // Tarih
   if (!tarihEl?.value) {
     setFieldError(tarihEl, 'Tarih zorunludur');
     if (!firstError) firstError = tarihEl;
@@ -107,7 +115,6 @@ function validate(overlay) {
     clearFieldError(tarihEl);
   }
 
-  // Hizmet tipi
   if (!overlay.querySelector('.gf-hizmet-btn.active')) {
     setGroupError(hizmetGrp);
     if (!firstError) firstError = hizmetGrp;
@@ -116,7 +123,6 @@ function validate(overlay) {
     clearGroupError(hizmetGrp);
   }
 
-  // KDV durumu
   if (!overlay.querySelector('.gf-kdv-btn.active')) {
     setGroupError(kdvGrp);
     if (!firstError) firstError = kdvGrp;
@@ -125,7 +131,6 @@ function validate(overlay) {
     clearGroupError(kdvGrp);
   }
 
-  // Tutar
   const tutarVal = parseFloat(tutarEl?.value || '');
   if (!tutarEl?.value || isNaN(tutarVal) || tutarVal < 0.01) {
     setFieldError(tutarEl, "Geçerli bir tutar girin (0'dan büyük)");
@@ -135,7 +140,6 @@ function validate(overlay) {
     clearFieldError(tutarEl);
   }
 
-  // Ödeme şekli
   if (!overlay.querySelector('.gf-odeme-btn.active')) {
     setGroupError(odemeGrp);
     if (!firstError) firstError = odemeGrp;
@@ -270,7 +274,6 @@ export function openGelirForm() {
   document.body.insertAdjacentHTML('beforeend', buildHTML(nextNo));
   const overlay = document.getElementById('gelir-form-overlay');
 
-  // Button group helper
   function initGroup(selector, onChange) {
     overlay.querySelectorAll(selector).forEach(btn => {
       btn.addEventListener('click', () => {
@@ -281,7 +284,6 @@ export function openGelirForm() {
     });
   }
 
-  // Hizmet tipi → KDV oto-seçimi
   initGroup('.gf-hizmet-btn', val => {
     const kdvDefault = KDV_DEFAULT[val] || 'muaf';
     overlay.querySelectorAll('.gf-kdv-btn').forEach(b =>
@@ -295,7 +297,6 @@ export function openGelirForm() {
 
   overlay.querySelector('#gf-tutar')?.addEventListener('input', () => updatePreview(overlay));
 
-  // İleri tarih uyarısı (izin ver, sadece uyar)
   overlay.querySelector('#gf-tarih')?.addEventListener('change', e => {
     const existing = overlay.querySelector('#gf-tarih-warn');
     if (e.target.value > bugun()) {
@@ -311,7 +312,6 @@ export function openGelirForm() {
     }
   });
 
-  // Kapat
   function close() {
     overlay.classList.add('modal-closing');
     setTimeout(() => overlay.remove(), 220);
@@ -325,17 +325,33 @@ export function openGelirForm() {
   overlay.querySelector('#gf-vazgec')?.addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-  // Kaydet
-  overlay.querySelector('#gf-kaydet')?.addEventListener('click', () => {
+  overlay.querySelector('#gf-kaydet')?.addEventListener('click', async () => {
     if (!validate(overlay)) return;
 
-    const data  = collectData(overlay);
-    const kayit = addGelir(data);
+    const kaydetBtn = overlay.querySelector('#gf-kaydet');
+    kaydetBtn.disabled = true;
+    kaydetBtn.textContent = 'Kaydediliyor...';
+    setSyncStatus('🟡 Kaydediliyor...', '#ffd780');
 
-    close();
-    document.dispatchEvent(new CustomEvent('smm:gelir-saved', { detail: { kayit } }));
+    try {
+      const data   = collectData(overlay);
+      const smmNo  = await incrementSmmNo();
+      const kayit  = await addGelir({ ...data, smmNo });
+
+      setSyncStatus('🟢 Bağlı', '#b8f0b8');
+      close();
+      document.dispatchEvent(new CustomEvent('smm:gelir-saved', { detail: { kayit } }));
+    } catch (err) {
+      console.error('[GelirForm] Kayıt hatası:', err);
+      setSyncStatus('🔴 Hata', '#ffb3b3');
+      const msg = err.message?.includes('network') || err.message?.includes('offline')
+        ? 'İnternet bağlantısı yok, daha sonra tekrar deneyin'
+        : 'Kayıt başarısız: ' + (err.message || 'Bilinmeyen hata');
+      showToast(msg, 'error');
+      kaydetBtn.disabled = false;
+      kaydetBtn.textContent = 'Kaydet';
+    }
   });
 
-  // İlk alana focus
   setTimeout(() => overlay.querySelector('#gf-tarih')?.focus(), 80);
 }

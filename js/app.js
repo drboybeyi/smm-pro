@@ -1,5 +1,6 @@
 import { initAuth } from './firebase-config.js';
-import { initState } from './state.js';
+import { setCurrentUser, listenGelirler, listenGiderler, listenAyarlar } from './db.js';
+import { initState, setGelirler, setGiderler, setAyarlar, subscribe } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openGelirForm } from './components/gelirForm.js';
 import { openGiderForm } from './components/giderForm.js';
@@ -40,6 +41,13 @@ function navigate(viewKey) {
 function setHeaderDate() {
   const el = document.getElementById('headerDate');
   if (el) el.textContent = formatTarih(bugun());
+}
+
+function setSyncStatus(text, color) {
+  const el = document.querySelector('.sync-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = color;
 }
 
 // ─── FAB Bottom Sheet ──────────────────────────────────────────
@@ -95,10 +103,8 @@ function showFabSheet() {
 
 document.getElementById('fabBtn')?.addEventListener('click', showFabSheet);
 
-// View'lardan gelen "form aç" isteği
 document.addEventListener('smm:open-gelir-form', () => openGelirForm());
 
-// Form kaydedildi → mevcut view'ı yenile + toast
 document.addEventListener('smm:gelir-saved', e => {
   navigate(currentView());
   showToast(`SMM #${e.detail.kayit.smmNo} kaydedildi`, 'success');
@@ -114,29 +120,30 @@ document.addEventListener('smm:gider-saved', () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => reg.update())   // Her yüklemede SW güncel mi diye kontrol et
+      .then(reg => reg.update())
       .catch(() => {});
   });
 }
 
 // ─── Firebase Init ─────────────────────────────────────────────
 
+// Firebase listener'ları state'i güncelleyince mevcut view'ı yenile
+subscribe('gelirler', () => navigate(currentView()));
+subscribe('giderler', () => navigate(currentView()));
+
 initAuth()
   .then((user) => {
     console.log('[App] Firebase ready, user:', user.uid);
-    const syncIndicator = document.querySelector('.sync-status');
-    if (syncIndicator) {
-      syncIndicator.textContent = '🟢 Bağlı';
-      syncIndicator.style.color = 'var(--success)';
-    }
+    setSyncStatus('🟢 Bağlı', '#b8f0b8');
+
+    setCurrentUser(user.uid);
+    listenGelirler(liste => setGelirler(liste));
+    listenGiderler(liste => setGiderler(liste));
+    listenAyarlar(ayarlar => setAyarlar(ayarlar));
   })
   .catch((err) => {
     console.error('[App] Firebase auth failed:', err);
-    const syncIndicator = document.querySelector('.sync-status');
-    if (syncIndicator) {
-      syncIndicator.textContent = '🔴 Bağlantı yok';
-      syncIndicator.style.color = 'var(--danger)';
-    }
+    setSyncStatus('🔴 Bağlantı yok', '#ffb3b3');
   });
 
 // ─── Başlat ────────────────────────────────────────────────────

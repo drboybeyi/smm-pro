@@ -1,5 +1,6 @@
-import { addGider } from '../state.js';
+import { addGider } from '../db.js';
 import { bugun, kdvAyristirGider, formatTL } from '../utils.js';
+import { show as showToast } from './toast.js';
 
 const CATEGORIES = [
   { value: 'kira',          emoji: '🏠', label: 'Kira' },
@@ -17,6 +18,13 @@ const CATEGORIES = [
   { value: 'vergi',         emoji: '🏛️', label: 'Vergi/Harç' },
   { value: 'diger',         emoji: '📌', label: 'Diğer' },
 ];
+
+function setSyncStatus(text, color) {
+  const el = document.querySelector('.sync-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = color;
+}
 
 // ─── Canlı KDV Önizlemesi ──────────────────────────────────────
 
@@ -260,7 +268,6 @@ export function openGiderForm() {
   document.body.insertAdjacentHTML('beforeend', buildHTML());
   const overlay = document.getElementById('gider-form-overlay');
 
-  // Kategori grid — tek seçim
   overlay.querySelector('#dgf-kategori-grid').addEventListener('click', e => {
     const btn = e.target.closest('.kategori-btn');
     if (!btn) return;
@@ -269,7 +276,6 @@ export function openGiderForm() {
     clearGridError(overlay.querySelector('#dgf-kategori-grid'));
   });
 
-  // Klavye: Space seçer
   overlay.querySelector('#dgf-kategori-grid').addEventListener('keydown', e => {
     if (e.key === ' ') {
       const btn = e.target.closest('.kategori-btn');
@@ -295,14 +301,31 @@ export function openGiderForm() {
   overlay.querySelector('#dgf-vazgec')?.addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-  overlay.querySelector('#dgf-kaydet')?.addEventListener('click', () => {
+  overlay.querySelector('#dgf-kaydet')?.addEventListener('click', async () => {
     if (!validate(overlay)) return;
 
-    const data  = collectData(overlay);
-    const kayit = addGider(data);
+    const kaydetBtn = overlay.querySelector('#dgf-kaydet');
+    kaydetBtn.disabled = true;
+    kaydetBtn.textContent = 'Kaydediliyor...';
+    setSyncStatus('🟡 Kaydediliyor...', '#ffd780');
 
-    close();
-    document.dispatchEvent(new CustomEvent('smm:gider-saved', { detail: { kayit } }));
+    try {
+      const data  = collectData(overlay);
+      const kayit = await addGider(data);
+
+      setSyncStatus('🟢 Bağlı', '#b8f0b8');
+      close();
+      document.dispatchEvent(new CustomEvent('smm:gider-saved', { detail: { kayit } }));
+    } catch (err) {
+      console.error('[GiderForm] Kayıt hatası:', err);
+      setSyncStatus('🔴 Hata', '#ffb3b3');
+      const msg = err.message?.includes('network') || err.message?.includes('offline')
+        ? 'İnternet bağlantısı yok, daha sonra tekrar deneyin'
+        : 'Kayıt başarısız: ' + (err.message || 'Bilinmeyen hata');
+      showToast(msg, 'error');
+      kaydetBtn.disabled = false;
+      kaydetBtn.textContent = 'Kaydet';
+    }
   });
 
   setTimeout(() => overlay.querySelector('#dgf-tarih')?.focus(), 80);
