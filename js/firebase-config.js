@@ -1,6 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
 const firebaseConfig = {
@@ -14,27 +18,25 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
-export const auth = getAuth(app);
+export const db      = getDatabase(app);
+export const auth    = getAuth(app);
 export const storage = getStorage(app);
 
-export function initAuth() {
-  return new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log('[Firebase] Authenticated as:', user.uid);
-        resolve(user);
-      } else {
-        signInAnonymously(auth)
-          .then((result) => {
-            console.log('[Firebase] Signed in anonymously:', result.user.uid);
-            resolve(result.user);
-          })
-          .catch((error) => {
-            console.error('[Firebase] Auth error:', error);
-            reject(error);
-          });
-      }
-    });
-  });
+export function getFirebaseErrorMessage(error) {
+  const msgs = {
+    'auth/email-already-in-use':   'Bu email zaten kayıtlı',
+    'auth/invalid-email':          'Geçersiz email adresi',
+    'auth/weak-password':          'Şifre en az 6 karakter olmalı',
+    'auth/user-not-found':         'Kullanıcı bulunamadı',
+    'auth/wrong-password':         'Yanlış şifre',
+    'auth/invalid-credential':     'Email veya şifre hatalı',
+    'auth/network-request-failed': 'İnternet bağlantısı yok',
+  };
+  return msgs[error.code] || `Giriş yapılamadı: ${error.code}`;
 }
+
+export const registerUser      = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+export const loginUser         = (email, password) => signInWithEmailAndPassword(auth, email, password);
+export const logoutUser        = ()                 => signOut(auth);
+export const sendPasswordReset = (email)            => sendPasswordResetEmail(auth, email);
+export const onAuthChange      = (cb)               => onAuthStateChanged(auth, cb);

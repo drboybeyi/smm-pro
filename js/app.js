@@ -1,10 +1,11 @@
-import { initAuth } from './firebase-config.js';
+import { onAuthChange } from './firebase-config.js';
 import { setCurrentUser, listenGelirler, listenGiderler, listenAyarlar } from './db.js';
 import { initState, setGelirler, setGiderler, setAyarlar, subscribe } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openGelirForm } from './components/gelirForm.js';
 import { openGiderForm } from './components/giderForm.js';
 import { show as showToast } from './components/toast.js';
+import { show as showLogin } from './views/login.js';
 import Dashboard from './views/dashboard.js';
 import Gelir     from './views/gelir.js';
 import Gider     from './views/gider.js';
@@ -19,8 +20,16 @@ const VIEWS = {
   ayarlar:   Ayarlar
 };
 
-const app      = document.getElementById('app');
-const navItems = document.querySelectorAll('.nav-item');
+const app       = document.getElementById('app');
+const bottomNav = document.querySelector('.bottom-nav');
+const fabBtn    = document.getElementById('fabBtn');
+const syncEl    = document.getElementById('syncIndicator');
+const navItems  = document.querySelectorAll('.nav-item');
+
+let _unsubListeners = [];
+let _authenticated  = false;
+
+// ─── Routing ───────────────────────────────────────────────────
 
 function currentView() {
   const hash = location.hash.slice(1);
@@ -38,16 +47,58 @@ function navigate(viewKey) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
+// ─── Header ────────────────────────────────────────────────────
+
 function setHeaderDate() {
   const el = document.getElementById('headerDate');
   if (el) el.textContent = formatTarih(bugun());
 }
 
 function setSyncStatus(text, color) {
-  const el = document.querySelector('.sync-status');
-  if (!el) return;
-  el.textContent = text;
-  el.style.color = color;
+  if (!syncEl) return;
+  syncEl.textContent = text;
+  syncEl.style.color = color;
+}
+
+// ─── UI toggle ─────────────────────────────────────────────────
+
+function showAppUI() {
+  if (bottomNav) bottomNav.style.display = '';
+  if (fabBtn)    fabBtn.style.display    = '';
+  if (syncEl)    syncEl.style.display    = '';
+}
+
+function hideAppUI() {
+  if (bottomNav) bottomNav.style.display = 'none';
+  if (fabBtn)    fabBtn.style.display    = 'none';
+  if (syncEl)    syncEl.style.display    = 'none';
+}
+
+// ─── Auth lifecycle ────────────────────────────────────────────
+
+function startApp(user) {
+  _authenticated = true;
+  setCurrentUser(user.uid);
+  setSyncStatus('🟢 Bağlı', '#b8f0b8');
+  showAppUI();
+
+  const u1 = listenGelirler(liste => setGelirler(liste));
+  const u2 = listenGiderler(liste => setGiderler(liste));
+  const u3 = listenAyarlar(ayarlar => setAyarlar(ayarlar));
+  _unsubListeners = [u1, u2, u3];
+
+  navigate(currentView());
+}
+
+function stopApp() {
+  _authenticated = false;
+  _unsubListeners.forEach(fn => fn?.());
+  _unsubListeners = [];
+  setCurrentUser(null);
+  setGelirler([]);
+  setGiderler([]);
+  hideAppUI();
+  showLogin();
 }
 
 // ─── FAB Bottom Sheet ──────────────────────────────────────────
@@ -81,27 +132,17 @@ function showFabSheet() {
 
   document.body.appendChild(overlay);
 
-  function close() { overlay.remove(); }
-
+  const close = () => overlay.remove();
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') close();
-  }, { once: true });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); }, { once: true });
 
-  document.getElementById('fbs-gelir')?.addEventListener('click', () => {
-    close();
-    openGelirForm();
-  });
-
-  document.getElementById('fbs-gider')?.addEventListener('click', () => {
-    close();
-    openGiderForm();
-  });
+  document.getElementById('fbs-gelir')?.addEventListener('click', () => { close(); openGelirForm(); });
+  document.getElementById('fbs-gider')?.addEventListener('click', () => { close(); openGiderForm(); });
 }
 
 // ─── Event Listeners ───────────────────────────────────────────
 
-document.getElementById('fabBtn')?.addEventListener('click', showFabSheet);
+fabBtn?.addEventListener('click', showFabSheet);
 
 document.addEventListener('smm:open-gelir-form', () => openGelirForm());
 
@@ -115,6 +156,9 @@ document.addEventListener('smm:gider-saved', () => {
   showToast('Gider kaydedildi', 'success');
 });
 
+subscribe('gelirler', () => { if (_authenticated) navigate(currentView()); });
+subscribe('giderler', () => { if (_authenticated) navigate(currentView()); });
+
 // ─── Service Worker ────────────────────────────────────────────
 
 if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -125,30 +169,17 @@ if ('serviceWorker' in navigator && location.hostname !== 'localhost' && locatio
   });
 }
 
-// ─── Firebase Init ─────────────────────────────────────────────
-
-// Firebase listener'ları state'i güncelleyince mevcut view'ı yenile
-subscribe('gelirler', () => navigate(currentView()));
-subscribe('giderler', () => navigate(currentView()));
-
-initAuth()
-  .then((user) => {
-    console.log('[App] Firebase ready, user:', user.uid);
-    setSyncStatus('🟢 Bağlı', '#b8f0b8');
-
-    setCurrentUser(user.uid);
-    listenGelirler(liste => setGelirler(liste));
-    listenGiderler(liste => setGiderler(liste));
-    listenAyarlar(ayarlar => setAyarlar(ayarlar));
-  })
-  .catch((err) => {
-    console.error('[App] Firebase auth failed:', err);
-    setSyncStatus('🔴 Bağlantı yok', '#ffb3b3');
-  });
-
-// ─── Başlat ────────────────────────────────────────────────────
+// ─── Init ──────────────────────────────────────────────────────
 
 initState();
 setHeaderDate();
-window.addEventListener('hashchange', () => navigate(currentView()));
-navigate(currentView());
+hideAppUI();
+window.addEventListener('hashchange', () => { if (_authenticated) navigate(currentView()); });
+
+onAuthChange(user => {
+  if (user && !user.isAnonymous) {
+    startApp(user);
+  } else {
+    stopApp();
+  }
+});
