@@ -6,12 +6,12 @@
   "background_color": "#f5ede0",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "start_url": "/smm-pro/",
-  "scope": "/smm-pro/",
+  "start_url": "./",
+  "scope": "./",
   "lang": "tr",
   "icons": [
     {
-      "src": "assets/icon.svg",
+      "src": "./assets/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
