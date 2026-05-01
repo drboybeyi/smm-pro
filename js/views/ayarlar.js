@@ -1,4 +1,5 @@
-import { getAyarlar, updateAyarlar } from '../state.js';
+import { getAyarlar } from '../state.js';
+import { updateAyarlar } from '../db.js';
 
 export default {
   render() {
@@ -64,7 +65,7 @@ export default {
   },
 
   afterRender() {
-    document.getElementById('btnAyarlarKaydet')?.addEventListener('click', () => {
+    document.getElementById('btnAyarlarKaydet')?.addEventListener('click', async () => {
       updateAyarlar({
         isimUnvan: document.getElementById('set-isim')?.value?.trim() || '',
         vergiNo:   document.getElementById('set-vergino')?.value?.trim() || '',
