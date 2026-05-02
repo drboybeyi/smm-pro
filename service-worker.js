@@ -1,5 +1,5 @@
 // Cache versiyonunu her deploy'da güncelle → eski cache otomatik silinir
-const CACHE = 'smm-pro-2026-04-29c';
+const CACHE = 'defter-pro-v1';
 
 // Install: hemen aktif ol, eski tab'ların kapanmasını bekleme
 self.addEventListener('install', e => {

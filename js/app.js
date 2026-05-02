@@ -1,23 +1,30 @@
 import { onAuthChange } from './firebase-config.js';
-import { setCurrentUser, listenGelirler, listenGiderler, listenAyarlar } from './db.js';
-import { initState, setGelirler, setGiderler, setAyarlar, subscribe } from './state.js';
+import {
+  setCurrentUser,
+  listenIslemler, listenKasalar, listenKategoriler, listenAyarlar,
+  checkAndCreateDefaults
+} from './db.js';
+import {
+  initState,
+  setIslemler, setKasalar, setKategoriler, setAyarlar,
+  subscribe
+} from './state.js';
 import { bugun, formatTarih } from './utils.js';
-import { openGelirForm } from './components/gelirForm.js';
-import { openGiderForm } from './components/giderForm.js';
+import { openIslemForm } from './components/islemForm.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
-import Dashboard from './views/dashboard.js';
-import Gelir     from './views/gelir.js';
-import Gider     from './views/gider.js';
-import Raporlar  from './views/raporlar.js';
-import Ayarlar   from './views/ayarlar.js';
+import Dashboard   from './views/dashboard.js';
+import Islemler    from './views/islemler.js';
+import Kasalar     from './views/kasalar.js';
+import Kategoriler from './views/kategoriler.js';
+import Ayarlar     from './views/ayarlar.js';
 
 const VIEWS = {
-  dashboard: Dashboard,
-  gelir:     Gelir,
-  gider:     Gider,
-  rapor:     Raporlar,
-  ayarlar:   Ayarlar
+  dashboard:   Dashboard,
+  islemler:    Islemler,
+  kasalar:     Kasalar,
+  kategoriler: Kategoriler,
+  ayarlar:     Ayarlar
 };
 
 const app       = document.getElementById('app');
@@ -82,10 +89,13 @@ function startApp(user) {
   setSyncStatus('🟢 Bağlı', '#b8f0b8');
   showAppUI();
 
-  const u1 = listenGelirler(liste => setGelirler(liste));
-  const u2 = listenGiderler(liste => setGiderler(liste));
-  const u3 = listenAyarlar(ayarlar => setAyarlar(ayarlar));
-  _unsubListeners = [u1, u2, u3];
+  const u1 = listenIslemler(liste    => setIslemler(liste));
+  const u2 = listenKasalar(liste     => setKasalar(liste));
+  const u3 = listenKategoriler(liste => setKategoriler(liste));
+  const u4 = listenAyarlar(ayarlar   => setAyarlar(ayarlar));
+  _unsubListeners = [u1, u2, u3, u4];
+
+  checkAndCreateDefaults(user.uid).catch(console.error);
 
   navigate(currentView());
 }
@@ -95,69 +105,27 @@ function stopApp() {
   _unsubListeners.forEach(fn => fn?.());
   _unsubListeners = [];
   setCurrentUser(null);
-  setGelirler([]);
-  setGiderler([]);
+  setIslemler([]);
+  setKasalar([]);
+  setKategoriler([]);
   hideAppUI();
   showLogin();
 }
 
-// ─── FAB Bottom Sheet ──────────────────────────────────────────
+// ─── FAB ───────────────────────────────────────────────────────
 
-function showFabSheet() {
-  if (document.getElementById('fab-sheet')) return;
+fabBtn?.addEventListener('click', () => openIslemForm('gider'));
 
-  const overlay = document.createElement('div');
-  overlay.id = 'fab-sheet';
-  overlay.className = 'bottom-sheet-overlay';
-  overlay.innerHTML = `
-    <div class="bottom-sheet">
-      <div class="bottom-sheet-handle"></div>
-      <div class="bottom-sheet-title">Ne eklemek istersiniz?</div>
-      <div class="bottom-sheet-option" id="fbs-gelir">
-        <div class="bottom-sheet-option-icon" style="background:#e8f4e8">₺</div>
-        <div>
-          <div style="font-weight:600;font-size:15px">Gelir Ekle</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">SMM kaydı oluştur</div>
-        </div>
-      </div>
-      <div class="bottom-sheet-option" id="fbs-gider">
-        <div class="bottom-sheet-option-icon" style="background:#faeaea">🧾</div>
-        <div>
-          <div style="font-weight:600;font-size:15px">Gider Ekle</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Fatura / gider kaydı</div>
-        </div>
-      </div>
-    </div>
-  `;
+// ─── Events ────────────────────────────────────────────────────
 
-  document.body.appendChild(overlay);
-
-  const close = () => overlay.remove();
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); }, { once: true });
-
-  document.getElementById('fbs-gelir')?.addEventListener('click', () => { close(); openGelirForm(); });
-  document.getElementById('fbs-gider')?.addEventListener('click', () => { close(); openGiderForm(); });
-}
-
-// ─── Event Listeners ───────────────────────────────────────────
-
-fabBtn?.addEventListener('click', showFabSheet);
-
-document.addEventListener('smm:open-gelir-form', () => openGelirForm());
-
-document.addEventListener('smm:gelir-saved', e => {
+document.addEventListener('defter:islem-saved', () => {
   navigate(currentView());
-  showToast(`SMM #${e.detail.kayit.smmNo} kaydedildi`, 'success');
+  showToast('İşlem kaydedildi', 'success');
 });
 
-document.addEventListener('smm:gider-saved', () => {
-  navigate(currentView());
-  showToast('Gider kaydedildi', 'success');
-});
-
-subscribe('gelirler', () => { if (_authenticated) navigate(currentView()); });
-subscribe('giderler', () => { if (_authenticated) navigate(currentView()); });
+subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); });
+subscribe('kasalar',     () => { if (_authenticated) navigate(currentView()); });
+subscribe('kategoriler', () => { if (_authenticated) navigate(currentView()); });
 
 // ─── Service Worker ────────────────────────────────────────────
 

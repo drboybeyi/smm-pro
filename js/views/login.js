@@ -9,8 +9,8 @@ function html() {
       <div class="login-card">
         <div class="login-logo">
           <div class="login-logo-icon">📒</div>
-          <div class="login-logo-title">SMM Pro</div>
-          <div class="login-logo-sub">Muayenehane Muhasebe Defteri</div>
+          <div class="login-logo-title">Defter Pro</div>
+          <div class="login-logo-sub">Gelir &amp; Gider Takibi</div>
         </div>
 
         <div class="login-toggle">

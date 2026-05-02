@@ -1,9 +1,3 @@
-const AYLAR = [
-  'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran',
-  'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik'
-];
-
-// Gerçek Türkçe ay adları (ekranda gösterim için)
 const AYLAR_TR = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
   'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
@@ -29,7 +23,6 @@ export function formatAy(dateStr) {
   return `${AYLAR_TR[m - 1]} ${y}`;
 }
 
-// YYYY-MM-DD formatında bugünün tarihi
 export function bugun() {
   const d = new Date();
   const y = d.getFullYear();
@@ -38,7 +31,6 @@ export function bugun() {
   return `${y}-${m}-${day}`;
 }
 
-// Gelir-Gider Pro 19 Aralık 2025 uyumlu alias
 export function getTodayString() {
   return bugun();
 }
@@ -70,81 +62,9 @@ export function isInDateRange(dateStr, startStr, endStr) {
   return dateStr >= startStr && dateStr <= endStr;
 }
 
-// KDV dahil tutarı ayrıştır
-// kdvAyristir(1100, 10) → { brut: 1000, kdv: 100, toplam: 1100 }
-// kdvAyristir(1500, 0)  → { brut: 1500, kdv: 0,   toplam: 1500 }
-export function kdvAyristir(toplamTutar, kdvOrani) {
-  const t = Number(toplamTutar) || 0;
-  const r = Number(kdvOrani) || 0;
-  if (r === 0) {
-    return { brut: t, kdv: 0, toplam: t };
-  }
-  const brut = t / (1 + r / 100);
-  const kdv = t - brut;
-  return {
-    brut: Math.round(brut * 100) / 100,
-    kdv:  Math.round(kdv * 100) / 100,
-    toplam: t
-  };
-}
-
-// Gider için: toplam (KDV dahil) → { net, kdv, brut }
-export function kdvAyristirGider(toplamTutarKdvDahil, kdvOrani) {
-  const t = Number(toplamTutarKdvDahil) || 0;
-  const r = Number(kdvOrani) || 0;
-  if (r === 0) {
-    return { net: t, kdv: 0, brut: t };
-  }
-  const net = t / (1 + r / 100);
-  const kdv = t - net;
-  return {
-    net:  Math.round(net * 100) / 100,
-    kdv:  Math.round(kdv * 100) / 100,
-    brut: t
-  };
-}
-
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
-
-export function hizmetTipiLabel(tip) {
-  const map = {
-    muayene: 'Muayene',
-    kontrol: 'Kontrol',
-    tetkik: 'Tetkik',
-    islem: 'İşlem',
-    diger: 'Diğer'
-  };
-  return map[tip] || tip;
-}
-
-export function kategoriLabel(kat) {
-  const map = {
-    kira: 'Kira',
-    elektrik: 'Elektrik',
-    su: 'Su',
-    dogalgaz: 'Doğalgaz',
-    internet: 'İnternet',
-    telefon: 'Telefon',
-    personel: 'Personel',
-    sgk: 'SGK',
-    sarf: 'Sarf Malzeme',
-    tibbi_malzeme: 'Tıbbi Malzeme',
-    demirbas: 'Demirbaş',
-    musavir: 'Müşavir',
-    vergi: 'Vergi',
-    diger: 'Diğer'
-  };
-  return map[kat] || kat;
-}
-
-export function odemeSekliLabel(sekil) {
-  const map = { nakit: 'Nakit', kart: 'Kart', havale: 'Havale' };
-  return map[sekil] || sekil;
-}
-
-// ─── Validasyon Yardımcıları ───────────────────────────────────
 
 export function isRequired(value) {
   return value !== null && value !== undefined && String(value).trim() !== '';

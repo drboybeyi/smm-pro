@@ -1,7 +1,7 @@
 {
-  "name": "SMM Pro",
-  "short_name": "SMM Pro",
-  "description": "Muayenehane muhasebe takibi",
+  "name": "Defter Pro",
+  "short_name": "Defter Pro",
+  "description": "Gelir gider takibi - kasalar ve kategoriler",
   "theme_color": "#8b6f47",
   "background_color": "#f5ede0",
   "display": "standalone",

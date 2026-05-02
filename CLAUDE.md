@@ -1,12 +1,8 @@
-# SMM Pro
+# Defter Pro
 
 ## Amaç
 
-Türkiye'de serbest meslek hekiminin (dahiliye uzmanı) muayenehane muhasebesini tutması. SMM kayıtları, gider takibi, KDV hesabı, yıllık gelir vergisi tahmini, mali müşavir için Excel/PDF export.
-
-## Vergi Statüsü
-
-Şahsi serbest meslek, Serbest Meslek Makbuzu (SMM) keser. Kısmi KDV mükellefi (muayene/kontrol KDV muaf [KDVK 17/1-d], tetkik/işlem %10 KDV). Stopaj YOK (sadece bireysel hasta). Yıllık gelir vergisi beyanı verir.
+Genel amaçlı kişisel finans takip uygulaması. Kasalar (para tutulacak yerler), kullanıcı tanımlı kategoriler, gelir/gider/transfer işlemleri, cihazlar arası gerçek zamanlı senkronizasyon.
 
 ## Teknoloji
 
@@ -21,44 +17,41 @@ Türkiye'de serbest meslek hekiminin (dahiliye uzmanı) muayenehane muhasebesini
 
 ## Veri Modeli
 
-### gelirler koleksiyonu
-- id, smmNo (otomatik artan, 1'den başlar, atlamasız)
-- tarih (YYYY-MM-DD)
-- hastaAdi (opsiyonel)
-- hizmetTipi: muayene | kontrol | tetkik | islem | diger
-- kdvDurumu: muaf | "10" | "20"
-- toplamTutar (KDV dahil, kullanıcı bunu girer)
-- brutTutar (KDV hariç, sistem hesaplar)
-- kdvTutari (sistem hesaplar)
-- odemeSekli: nakit | kart | havale
-- notlar
-- olusturmaTarihi
+### islemler/{id}
+- id, tarih (YYYY-MM-DD)
+- tip: gelir | gider | transfer
+- tutar (number)
+- kasaId (zorunlu)
+- hedefKasaId (sadece transfer)
+- kategoriId (gelir/gider için, transfer için yok)
+- aciklama (opsiyonel)
+- olusturmaTarihi (timestamp)
 
-### giderler koleksiyonu
-- id, tarih
-- kategori: kira | elektrik | su | dogalgaz | internet | telefon | personel | sgk | sarf | tibbi_malzeme | demirbas | musavir | vergi | diger
-- tedarikci, belgeTipi (fatura/fis/makbuz/belgesiz), belgeNo
-- brutTutar (KDV dahil), kdvOrani (0/1/10/20), kdvTutari, netTutar
-- belgeFotoUrl (Firebase Storage URL'i, opsiyonel)
-- notlar, olusturmaTarihi
+### kasalar/{id}
+- id, ad, emoji, aciklama
+- olusturmaTarihi, silindi (soft delete)
+
+### kategoriler/{id}
+- id, ad, emoji, tip (gelir|gider)
+- olusturmaTarihi, silindi (soft delete)
 
 ### ayarlar (tek kayıt)
-- sonSmmNo, varsayilanKdvOranlari, vadeHatirlatma, isimUnvan, vergiNo, adres
+- kullaniciAdi, paraBirimi
 
 ## 5 Ana Ekran
 
-1. Dashboard: aylık metrikler (brüt gelir, tahsil KDV, gider, net kar), yıllık kümülatif, vade hatırlatmaları, hızlı butonlar
-2. Gelir Girişi: KDV dahil tutar girilir, sistem ayrıştırır; SMM no otomatik atanır
-3. Gider Girişi: kategori, KDV, belge fotoğrafı yükleme
-4. Raporlar: Aylık SMM defteri (Excel+PDF), aylık KDV beyan hazırlık, aylık gelir-gider, yıllık özet
-5. Ayarlar
+1. Dashboard (Özet): aylık metrikler (gelir, gider, net, kasalar bakiye), kasalar listesi, son 5 işlem
+2. İşlemler: Tümü/Gelir/Gider/Transfer filtreli liste; tek "Yeni İşlem" formu
+3. Kasalar: bakiyeler, kasa ekle/düzenle/sil
+4. Kategoriler: gelir/gider tabları, kategori ekle/düzenle/sil
+5. Ayarlar: profil, hesap, çıkış
 
 ## Önemli Notlar
 
-- Mevcut Gelir-Gider Pro projesinin mimari paterni temel alınacak (Firebase Realtime DB sync, PWA yapısı, date utility 19 Aralık 2025 versiyonu)
-- Hesaplamalar tahmini olarak gösterilecek; mali müşavir onayı zorunlu uyarısı eklenecek
-- Mobil uyumlu, telefondan kamera erişimi gider faturası foto için kritik
-- SMM numaraları atlamasız sıralı olmalı (vergi mevzuatı gereği)
+- Dashboard görsel tasarımı (card layout, renkler, spacing, Defter 360 teması) KESİNLİKLE korunmalı
+- Yeni kullanıcı kaydolunca checkAndCreateDefaults() ile 4 kasa + 15 kategori otomatik oluşur
+- Bakiye = (gelirler) + (transfer gelen) - (giderler) - (transfer giden) per kasa
+- Faz 2: işlem düzenle/sil; Faz 3: Excel/PDF rapor
 
 ## Deployment
 

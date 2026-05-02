@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#8b6f47">
-  <meta name="description" content="Muayenehane muhasebe takibi">
+  <meta name="description" content="Gelir gider takibi - kasalar ve kategoriler">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="SMM Pro">
+  <meta name="apple-mobile-web-app-title" content="Defter Pro">
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./css/style.css">
-  <title>SMM Pro</title>
+  <title>Defter Pro</title>
 </head>
 <body>
 
@@ -18,7 +18,7 @@
   <header class="header">
     <div class="header-left">
       <span class="header-logo">₺</span>
-      <span class="header-title">SMM Pro</span>
+      <span class="header-title">Defter Pro</span>
     </div>
     <div class="header-right">
       <span class="header-date" id="headerDate"></span>
@@ -39,23 +39,23 @@
       </svg>
       <span>Özet</span>
     </a>
-    <a href="#gelir" class="nav-item" data-view="gelir">
+    <a href="#islemler" class="nav-item" data-view="islemler">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-        <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+        <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
       </svg>
-      <span>Gelir</span>
+      <span>İşlemler</span>
     </a>
-    <a href="#gider" class="nav-item" data-view="gider">
+    <a href="#kasalar" class="nav-item" data-view="kasalar">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+        <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
       </svg>
-      <span>Gider</span>
+      <span>Kasalar</span>
     </a>
-    <a href="#rapor" class="nav-item" data-view="rapor">
+    <a href="#kategoriler" class="nav-item" data-view="kategoriler">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+        <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM7 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
       </svg>
-      <span>Rapor</span>
+      <span>Kategoriler</span>
     </a>
     <a href="#ayarlar" class="nav-item" data-view="ayarlar">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
