@@ -1,6 +1,7 @@
 import { getIslemler, getKasalar, getKategoriler } from '../state.js';
 import { formatTL, formatTarih } from '../utils.js';
 import { openIslemForm } from '../components/islemForm.js';
+import { openIslemDetay } from '../components/islemDetay.js';
 
 let currentFilter = 'tumu';
 
@@ -29,7 +30,7 @@ function islemItem(islem, kasalar, kategoriler) {
   }
 
   return `
-    <div class="list-item">
+    <div class="list-item" data-islem-id="${islem.id}" style="cursor:pointer">
       <div class="list-item-icon" style="background:${bg};color:${color};font-size:16px">
         ${iconContent}
       </div>
@@ -39,6 +40,16 @@ function islemItem(islem, kasalar, kategoriler) {
       </div>
       <div class="list-item-amount ${cls}">${prefix}${formatTL(islem.tutar)}</div>
     </div>`;
+}
+
+function attachListClick(listEl) {
+  listEl?.addEventListener('click', e => {
+    const item = e.target.closest('.list-item[data-islem-id]');
+    if (!item) return;
+    const id    = item.dataset.islemId;
+    const islem = getIslemler().find(i => i.id === id);
+    if (islem) openIslemDetay(islem);
+  });
 }
 
 export default {
@@ -78,6 +89,8 @@ export default {
   afterRender() {
     document.getElementById('btnYeniIslem')?.addEventListener('click', () => openIslemForm('gider'));
 
+    attachListClick(document.getElementById('islemler-list'));
+
     document.querySelectorAll('.filter-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         currentFilter = tab.dataset.filter;
@@ -91,7 +104,8 @@ export default {
           ? islemler
           : islemler.filter(i => i.tip === currentFilter);
 
-        document.getElementById('islemler-list').innerHTML =
+        const listEl = document.getElementById('islemler-list');
+        listEl.innerHTML =
           filtered.length === 0
             ? `<div class="placeholder-view"><div class="placeholder-icon">₺</div><div class="placeholder-text">Bu türde kayıt yok.</div></div>`
             : filtered.map(i => islemItem(i, kasalar, kategoriler)).join('');

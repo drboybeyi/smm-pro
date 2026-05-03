@@ -11,6 +11,7 @@ import {
 } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
+import { openTakvim } from './views/takvim.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
 import Dashboard   from './views/dashboard.js';
@@ -112,15 +113,60 @@ function stopApp() {
   showLogin();
 }
 
-// ─── FAB ───────────────────────────────────────────────────────
+// ─── FAB Bottom Sheet ──────────────────────────────────────────
 
-fabBtn?.addEventListener('click', () => openIslemForm('gider'));
+function showFabSheet() {
+  if (document.getElementById('fab-sheet-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'fab-sheet-overlay';
+  overlay.className = 'fab-sheet-overlay';
+  overlay.innerHTML = `
+    <div class="fab-sheet">
+      <div class="fab-sheet-title">Yeni işlem ekle</div>
+      <button class="fab-sheet-btn fab-gelir"    id="fab-gelir">▲ Gelir Ekle</button>
+      <button class="fab-sheet-btn fab-gider"    id="fab-gider">▼ Gider Ekle</button>
+      <button class="fab-sheet-btn fab-transfer" id="fab-transfer">↔ Transfer</button>
+      <button class="fab-sheet-btn fab-takvim"   id="fab-takvim">📅 Takvim</button>
+      <button class="fab-sheet-btn fab-iptal"    id="fab-iptal">İptal</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    overlay.classList.add('fab-sheet-closing');
+    setTimeout(() => overlay.remove(), 200);
+  };
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  document.getElementById('fab-gelir')?.addEventListener('click', () => {
+    close(); setTimeout(() => openIslemForm('gelir'), 220);
+  });
+  document.getElementById('fab-gider')?.addEventListener('click', () => {
+    close(); setTimeout(() => openIslemForm('gider'), 220);
+  });
+  document.getElementById('fab-transfer')?.addEventListener('click', () => {
+    close(); setTimeout(() => openIslemForm('transfer'), 220);
+  });
+  document.getElementById('fab-takvim')?.addEventListener('click', () => {
+    close(); setTimeout(() => openTakvim(), 220);
+  });
+  document.getElementById('fab-iptal')?.addEventListener('click', close);
+}
+
+fabBtn?.addEventListener('click', showFabSheet);
 
 // ─── Events ────────────────────────────────────────────────────
 
 document.addEventListener('defter:islem-saved', () => {
   navigate(currentView());
   showToast('İşlem kaydedildi', 'success');
+});
+
+document.addEventListener('defter:islem-updated', () => {
+  navigate(currentView());
+  showToast('İşlem güncellendi', 'success');
 });
 
 subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); });

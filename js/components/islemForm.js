@@ -1,5 +1,5 @@
 import { getKasalar, getKategoriler } from '../state.js';
-import { addIslem } from '../db.js';
+import { addIslem, updateIslem } from '../db.js';
 import { bugun } from '../utils.js';
 import { show as showToast } from './toast.js';
 
@@ -22,7 +22,7 @@ function buildKategoriGrid(kategoriler, tip) {
     </button>`).join('');
 }
 
-function buildHTML(kasalar) {
+function buildHTML(kasalar, title = 'Yeni İşlem', saveLabel = 'Kaydet') {
   const kasaOpts = kasalar.length
     ? kasalar.map(k => `<option value="${k.id}">${k.emoji} ${k.ad}</option>`).join('')
     : '<option value="" disabled>Önce kasa ekleyin</option>';
@@ -31,7 +31,7 @@ function buildHTML(kasalar) {
 <div id="islem-form-overlay" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="modal-title">Yeni İşlem</span>
+      <span class="modal-title">${title}</span>
       <button class="modal-close" id="if-close">&#x2715;</button>
     </div>
     <div class="modal-body">
@@ -86,7 +86,7 @@ function buildHTML(kasalar) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="if-vazgec">Vazgeç</button>
-      <button class="btn btn-primary" id="if-kaydet">Kaydet</button>
+      <button class="btn btn-primary" id="if-kaydet">${saveLabel}</button>
     </div>
   </div>
 </div>`;
@@ -94,19 +94,23 @@ function buildHTML(kasalar) {
 
 // ─── Ana Fonksiyon ─────────────────────────────────────────────
 
-export function openIslemForm(defaultTip = 'gider') {
+export function openIslemForm(defaultTip = 'gider', islemToEdit = null) {
   if (document.getElementById('islem-form-overlay')) return;
 
   const kasalar     = getKasalar();
   const kategoriler = getKategoriler();
 
-  document.body.insertAdjacentHTML('beforeend', buildHTML(kasalar));
+  const isEdit  = islemToEdit !== null;
+  const title   = isEdit ? 'İşlem Düzenle' : 'Yeni İşlem';
+  const saveLabel = isEdit ? 'Güncelle' : 'Kaydet';
+
+  document.body.insertAdjacentHTML('beforeend', buildHTML(kasalar, title, saveLabel));
   const overlay = document.getElementById('islem-form-overlay');
 
-  let selectedTip        = defaultTip;
+  let selectedTip        = isEdit ? islemToEdit.tip : defaultTip;
   let selectedKategoriId = null;
 
-  function updateFormForTip(tip) {
+  function updateFormForTip(tip, preselectedKatId = null) {
     overlay.querySelectorAll('.if-tip-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.val === tip)
     );
@@ -130,6 +134,10 @@ export function openIslemForm(defaultTip = 'gider') {
           grid.classList.remove('error-grid');
           grid.parentNode.querySelector('.form-error')?.remove();
         });
+        if (preselectedKatId && btn.dataset.id === preselectedKatId) {
+          btn.setAttribute('aria-pressed', 'true');
+          selectedKategoriId = preselectedKatId;
+        }
       });
     }
   }
@@ -142,7 +150,19 @@ export function openIslemForm(defaultTip = 'gider') {
     });
   });
 
-  updateFormForTip(defaultTip);
+  // Initial render with pre-selection if editing
+  updateFormForTip(selectedTip, isEdit ? (islemToEdit.kategoriId || null) : null);
+
+  // Pre-fill fields for edit mode
+  if (isEdit) {
+    overlay.querySelector('#if-tarih').value   = islemToEdit.tarih || bugun();
+    overlay.querySelector('#if-tutar').value   = islemToEdit.tutar != null ? islemToEdit.tutar : '';
+    overlay.querySelector('#if-kasa').value    = islemToEdit.kasaId || '';
+    overlay.querySelector('#if-aciklama').value = islemToEdit.aciklama || '';
+    if (islemToEdit.tip === 'transfer' && islemToEdit.hedefKasaId) {
+      overlay.querySelector('#if-hedef-kasa').value = islemToEdit.hedefKasaId;
+    }
+  }
 
   function close() {
     overlay.classList.add('modal-closing');
@@ -165,7 +185,6 @@ export function openIslemForm(defaultTip = 'gider') {
     const aciklama    = overlay.querySelector('#if-aciklama').value.trim();
     const tutarVal    = parseFloat(tutarStr);
 
-    // Önceki hataları temizle
     overlay.querySelectorAll('.form-error').forEach(e => e.remove());
     overlay.querySelectorAll('.error').forEach(e => e.classList.remove('error'));
     overlay.querySelectorAll('.error-grid').forEach(e => e.classList.remove('error-grid'));
@@ -216,21 +235,35 @@ export function openIslemForm(defaultTip = 'gider') {
 
     const kaydetBtn = overlay.querySelector('#if-kaydet');
     kaydetBtn.disabled = true;
-    kaydetBtn.textContent = 'Kaydediliyor...';
+    kaydetBtn.textContent = isEdit ? 'Güncelleniyor...' : 'Kaydediliyor...';
     setSyncStatus('🟡 Kaydediliyor...', '#ffd780');
 
     try {
-      const islemData = { tarih, tip: selectedTip, tutar: tutarVal, kasaId, aciklama };
-      if (selectedTip === 'transfer') {
-        islemData.hedefKasaId = hedefKasaId;
+      if (isEdit) {
+        const updates = { tarih, tip: selectedTip, tutar: tutarVal, kasaId, aciklama };
+        if (selectedTip === 'transfer') {
+          updates.hedefKasaId = hedefKasaId;
+          updates.kategoriId  = null;
+        } else {
+          updates.kategoriId  = selectedKategoriId;
+          updates.hedefKasaId = null;
+        }
+        await updateIslem(islemToEdit.id, updates);
+        setSyncStatus('🟢 Bağlı', '#b8f0b8');
+        close();
+        document.dispatchEvent(new CustomEvent('defter:islem-updated', { detail: { id: islemToEdit.id } }));
       } else {
-        islemData.kategoriId = selectedKategoriId;
+        const islemData = { tarih, tip: selectedTip, tutar: tutarVal, kasaId, aciklama };
+        if (selectedTip === 'transfer') {
+          islemData.hedefKasaId = hedefKasaId;
+        } else {
+          islemData.kategoriId = selectedKategoriId;
+        }
+        const kayit = await addIslem(islemData);
+        setSyncStatus('🟢 Bağlı', '#b8f0b8');
+        close();
+        document.dispatchEvent(new CustomEvent('defter:islem-saved', { detail: { kayit } }));
       }
-
-      const kayit = await addIslem(islemData);
-      setSyncStatus('🟢 Bağlı', '#b8f0b8');
-      close();
-      document.dispatchEvent(new CustomEvent('defter:islem-saved', { detail: { kayit } }));
     } catch (err) {
       console.error('[IslemForm] Kayıt hatası:', err);
       setSyncStatus('🔴 Hata', '#ffb3b3');
@@ -239,7 +272,7 @@ export function openIslemForm(defaultTip = 'gider') {
         : 'Kayıt başarısız: ' + (err.message || 'Bilinmeyen hata');
       showToast(msg, 'error');
       kaydetBtn.disabled = false;
-      kaydetBtn.textContent = 'Kaydet';
+      kaydetBtn.textContent = isEdit ? 'Güncelle' : 'Kaydet';
     }
   });
 

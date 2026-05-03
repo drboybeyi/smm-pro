@@ -1095,3 +1095,235 @@ select.form-control {
 }
 
 .login-link:hover { color: var(--accent-hover); }
+
+/* ═══════════════════════════════════════════════════════════
+   İŞLEM DETAY MODAL
+═══════════════════════════════════════════════════════════ */
+
+.detay-rows {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.detay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+}
+
+.detay-row:last-child { border-bottom: none; }
+
+.detay-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 90px;
+}
+
+.detay-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAKVİM
+═══════════════════════════════════════════════════════════ */
+
+.takvim-box {
+  max-width: 480px;
+  width: 100%;
+}
+
+.takvim-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.takvim-month-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border);
+  margin: 0;
+  padding: 0 0 4px;
+}
+
+.cal-header-cell {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 8px 2px 5px;
+  background: var(--bg-primary);
+}
+
+.cal-cell {
+  background: var(--bg-primary);
+  min-height: 58px;
+  padding: 4px 3px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cal-cell:hover { background: var(--bg-secondary); }
+
+.cal-cell-empty {
+  background: var(--bg-secondary);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.cal-cell-empty:hover { background: var(--bg-secondary); }
+
+.cal-day-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-today .cal-day-num {
+  background: var(--accent);
+  color: #fff;
+}
+
+.cal-net-pos {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--success);
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.cal-net-neg {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--danger);
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GÜN DETAY MODAL
+═══════════════════════════════════════════════════════════ */
+
+.gun-detay-ozet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0 16px;
+  flex-wrap: wrap;
+}
+
+.gun-ozet-item {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gun-ozet-sep {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FAB BOTTOM SHEET
+═══════════════════════════════════════════════════════════ */
+
+.fab-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.18s ease;
+}
+
+.fab-sheet {
+  background: var(--bg-primary);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideUp 0.2s ease;
+}
+
+.fab-sheet-title {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 0 6px;
+}
+
+.fab-sheet-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fab-sheet-btn:active { transform: scale(0.98); }
+
+.fab-gelir    { color: var(--success); }
+.fab-gider    { color: var(--danger); }
+.fab-transfer { color: var(--accent); }
+.fab-iptal    { background: transparent; border-color: transparent; color: var(--text-secondary); }
+
+.fab-sheet-overlay.fab-sheet-closing { animation: fadeOut 0.2s ease forwards; }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
