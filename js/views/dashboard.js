@@ -1,5 +1,5 @@
-import { getIslemler, getKasalar, getKategoriler } from '../state.js';
-import { formatTL, formatTarih, formatAy, bugun } from '../utils.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler } from '../state.js';
+import { formatTL, formatTarih, formatAy, bugun, hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
 
@@ -28,6 +28,41 @@ function kasalarList(kasalar, islemler) {
         <span style="font-size:14px;font-weight:700;color:${bakiye >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatTL(bakiye)}</span>
       </div>`;
   }).join('');
+}
+
+function yaklaşanOdemelerCard(cariler, islemler, today) {
+  const yaklaşanlar = cariler
+    .filter(c => c.tip === 'tedarikci' && c.vadeTipi && c.vadeTipi !== 'yok')
+    .map(c => {
+      const vade = hesaplaSonrakiVade(c, today);
+      if (!vade) return null;
+      const fark = gunFarki(vade, today);
+      if (fark < 0 || fark > 7) return null;
+      const bakiye = hesaplaCariBakiye(c.id, islemler);
+      return { cari: c, fark, bakiye };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.fark - b.fark);
+
+  const inner = yaklaşanlar.length === 0
+    ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">✓ Yaklaşan ödeme yok</p>`
+    : yaklaşanlar.map(({ cari, fark, bakiye }) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:14px;font-weight:600">${cari.ad}</div>
+            <div style="font-size:12px;color:var(--warning)">${fark === 0 ? 'Bugün!' : fark + ' gün sonra'}</div>
+          </div>
+          <span style="font-size:14px;font-weight:700;color:var(--danger)">${formatTL(Math.abs(bakiye))}</span>
+        </div>`).join('');
+
+  return `
+    <div class="section-header">
+      <button class="section-title" id="dashCariBtn" style="background:none;border:none;font-weight:600;font-size:15px;color:var(--text-primary);cursor:pointer;padding:0;font-family:inherit">
+        ⚠️ Yaklaşan Ödemeler
+      </button>
+      <a class="btn btn-secondary btn-sm" id="dashTumCariler">Tümü →</a>
+    </div>
+    <div class="card mb-3" style="padding:4px 16px">${inner}</div>`;
 }
 
 function recentList(islemler, kasalar, kategoriler) {
@@ -72,7 +107,7 @@ function recentList(islemler, kasalar, kategoriler) {
         </div>
         <div class="list-item-body">
           <div class="list-item-title">${title}</div>
-          <div class="list-item-subtitle">${formatTarih(islem.tarih)} · ${kasa?.ad || '?'}</div>
+          <div class="list-item-subtitle">${formatTarih(islem.tarih)} · ${kasa?.ad || (islem.cariId ? 'Cari' : '?')}</div>
         </div>
         <div class="list-item-amount ${amountClass}">${prefix}${formatTL(islem.tutar)}</div>
       </div>`;
@@ -84,7 +119,9 @@ export default {
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
+    const cariler     = getCariler();
     const ay          = bugun().slice(0, 7);
+    const today       = bugun();
     const { ayGelir, ayGider, ayNet } = calcMetrics(islemler, ay);
     const toplamBakiye = kasalar.reduce((sum, k) => sum + hesaplaKasaBakiyesi(k.id, islemler), 0);
 
@@ -112,6 +149,8 @@ export default {
         </div>
       ` : ''}
 
+      ${yaklaşanOdemelerCard(cariler, islemler, today)}
+
       <div class="section-header">
         <span class="section-title">Son İşlemler</span>
         <a href="#islemler" class="btn btn-secondary btn-sm">Tümü →</a>
@@ -134,6 +173,13 @@ export default {
       e.preventDefault();
       e.stopPropagation();
       openIslemForm('gider');
+    });
+    document.getElementById('dashCariBtn')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('defter:open-cariler'));
+    });
+    document.getElementById('dashTumCariler')?.addEventListener('click', e => {
+      e.preventDefault();
+      document.dispatchEvent(new CustomEvent('defter:open-cariler'));
     });
   }
 };

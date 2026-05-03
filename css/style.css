@@ -1327,3 +1327,210 @@ select.form-control {
 @keyframes fadeOut {
   to { opacity: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ HESAPLAR — LISTE
+═══════════════════════════════════════════════════════════ */
+
+.cariler-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.cari-bakiye-pos  { color: var(--success); font-weight: 700; font-size: 13px; }
+.cari-bakiye-neg  { color: var(--danger);  font-weight: 700; font-size: 13px; }
+.cari-kapali      { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+
+.cari-vade {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+
+.cari-vade-acil {
+  color: var(--warning);
+  background: #fff4e0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ DETAY
+═══════════════════════════════════════════════════════════ */
+
+.cari-detay-box {
+  max-width: 480px;
+  width: 100%;
+}
+
+.cari-tip-chip {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.cari-bakiye-card {
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.cari-bakiye-card.cari-bakiye-alacak {
+  background: #e8f4e8;
+  border: 1px solid #b8d8b8;
+}
+
+.cari-bakiye-card.cari-bakiye-borc {
+  background: #faeaea;
+  border: 1px solid #e8c0c0;
+}
+
+.cari-bakiye-card.cari-bakiye-sifir {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.cari-bakiye-tutar {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.cari-bakiye-alacak .cari-bakiye-tutar { color: var(--success); }
+.cari-bakiye-borc   .cari-bakiye-tutar { color: var(--danger); }
+.cari-bakiye-sifir  .cari-bakiye-tutar { color: var(--text-secondary); }
+
+.cari-bakiye-etiket {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cari-vade-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cari-vade-card-acil {
+  background: #fff4e0;
+  border-color: #e8c090;
+  color: var(--warning);
+}
+
+.cari-vade-fark {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.cari-aksiyonlar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cari-aksiyon-btn {
+  flex: 1;
+  padding: 12px 8px;
+  font-size: 14px;
+}
+
+.btn-success {
+  background: var(--success);
+  color: #fff;
+  border: none;
+}
+
+.btn-success:hover { background: #4a6a2a; }
+
+.hareket-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.hareket-item:last-child { border-bottom: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ FORM
+═══════════════════════════════════════════════════════════ */
+
+.cf-vade-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.cf-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.cf-radio-row input[type="radio"] { cursor: pointer; }
+
+.cf-inline-input {
+  width: 60px !important;
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  font-size: 14px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ ROZET — islemler listesi
+═══════════════════════════════════════════════════════════ */
+
+.cari-rozet {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--accent);
+  vertical-align: middle;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAKVİM — VADE DOT
+═══════════════════════════════════════════════════════════ */
+
+.cal-vade-dot {
+  font-size: 9px;
+  line-height: 1;
+  display: block;
+  text-align: center;
+}
+
+.gun-vade-section {
+  background: #fff4e0;
+  border: 1px solid #e8c090;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD — YAKLAŞAN ÖDEMELER
+═══════════════════════════════════════════════════════════ */
+
+.mb-3 { margin-bottom: 12px; }

@@ -164,3 +164,43 @@ export async function checkAndCreateDefaults(uid) {
     await createDefaultData(uid);
   }
 }
+
+// ─── CARİLER ──────────────────────────────────────────────────
+
+export async function addCari(cariData) {
+  const path   = getUserPath('cariler');
+  const newRef = push(ref(db, path));
+  const data   = { ...cariData, id: newRef.key, olusturmaTarihi: Date.now(), silindi: false };
+  await set(newRef, data);
+  return data;
+}
+
+export async function updateCari(id, updates) {
+  await update(ref(db, `${getUserPath('cariler')}/${id}`), updates);
+}
+
+export function listenCariler(callback) {
+  const r = ref(db, getUserPath('cariler'));
+  return onValue(r, snap => {
+    const data  = snap.val() || {};
+    const liste = Object.values(data)
+      .filter(c => !c.silindi)
+      .sort((a, b) => (a.olusturmaTarihi || 0) - (b.olusturmaTarihi || 0));
+    callback(liste);
+  });
+}
+
+const DEFAULT_CARILER = [
+  { ad: 'Eczane Akın',     tip: 'tedarikci', telefon: '', notlar: '', vadeTipi: 'her_ay', vadeGunu: 15 },
+  { ad: 'Personel Örnek',  tip: 'personel',  telefon: '', notlar: '', vadeTipi: 'yok' },
+];
+
+export async function checkAndCreateDefaultCariler(uid) {
+  const snap = await get(ref(db, `${USER_PATH}${uid}/cariler`));
+  if (!snap.exists()) {
+    for (const c of DEFAULT_CARILER) {
+      const newRef = push(ref(db, `${USER_PATH}${uid}/cariler`));
+      await set(newRef, { ...c, id: newRef.key, olusturmaTarihi: Date.now(), silindi: false });
+    }
+  }
+}

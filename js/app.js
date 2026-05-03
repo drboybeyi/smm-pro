@@ -1,17 +1,18 @@
 import { onAuthChange } from './firebase-config.js';
 import {
   setCurrentUser,
-  listenIslemler, listenKasalar, listenKategoriler, listenAyarlar,
-  checkAndCreateDefaults
+  listenIslemler, listenKasalar, listenKategoriler, listenAyarlar, listenCariler,
+  checkAndCreateDefaults, checkAndCreateDefaultCariler
 } from './db.js';
 import {
   initState,
-  setIslemler, setKasalar, setKategoriler, setAyarlar,
+  setIslemler, setKasalar, setKategoriler, setAyarlar, setCariler,
   subscribe
 } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
 import { openTakvim } from './views/takvim.js';
+import { openCariler } from './views/cariler.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
 import Dashboard   from './views/dashboard.js';
@@ -94,9 +95,11 @@ function startApp(user) {
   const u2 = listenKasalar(liste     => setKasalar(liste));
   const u3 = listenKategoriler(liste => setKategoriler(liste));
   const u4 = listenAyarlar(ayarlar   => setAyarlar(ayarlar));
-  _unsubListeners = [u1, u2, u3, u4];
+  const u5 = listenCariler(liste     => setCariler(liste));
+  _unsubListeners = [u1, u2, u3, u4, u5];
 
   checkAndCreateDefaults(user.uid).catch(console.error);
+  checkAndCreateDefaultCariler(user.uid).catch(console.error);
 
   navigate(currentView());
 }
@@ -109,6 +112,7 @@ function stopApp() {
   setIslemler([]);
   setKasalar([]);
   setKategoriler([]);
+  setCariler([]);
   hideAppUI();
   showLogin();
 }
@@ -124,10 +128,11 @@ function showFabSheet() {
   overlay.innerHTML = `
     <div class="fab-sheet">
       <div class="fab-sheet-title">Yeni işlem ekle</div>
-      <button class="fab-sheet-btn fab-gelir"    id="fab-gelir">▲ Gelir Ekle</button>
-      <button class="fab-sheet-btn fab-gider"    id="fab-gider">▼ Gider Ekle</button>
-      <button class="fab-sheet-btn fab-transfer" id="fab-transfer">↔ Transfer</button>
-      <button class="fab-sheet-btn fab-takvim"   id="fab-takvim">📅 Takvim</button>
+      <button class="fab-sheet-btn fab-gelir"    id="fab-gelir">📈 Gelir Ekle</button>
+      <button class="fab-sheet-btn fab-gider"    id="fab-gider">📉 Gider Ekle</button>
+      <button class="fab-sheet-btn fab-transfer" id="fab-transfer">🔄 Transfer</button>
+      <button class="fab-sheet-btn fab-cari"     id="fab-cari">👥 Cari İşlem</button>
+      <button class="fab-sheet-btn fab-takvim"   id="fab-takvim">📅 Takvim Görünümü</button>
       <button class="fab-sheet-btn fab-iptal"    id="fab-iptal">İptal</button>
     </div>`;
 
@@ -140,18 +145,11 @@ function showFabSheet() {
 
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-  document.getElementById('fab-gelir')?.addEventListener('click', () => {
-    close(); setTimeout(() => openIslemForm('gelir'), 220);
-  });
-  document.getElementById('fab-gider')?.addEventListener('click', () => {
-    close(); setTimeout(() => openIslemForm('gider'), 220);
-  });
-  document.getElementById('fab-transfer')?.addEventListener('click', () => {
-    close(); setTimeout(() => openIslemForm('transfer'), 220);
-  });
-  document.getElementById('fab-takvim')?.addEventListener('click', () => {
-    close(); setTimeout(() => openTakvim(), 220);
-  });
+  document.getElementById('fab-gelir')?.addEventListener('click',    () => { close(); setTimeout(() => openIslemForm('gelir'),    220); });
+  document.getElementById('fab-gider')?.addEventListener('click',    () => { close(); setTimeout(() => openIslemForm('gider'),    220); });
+  document.getElementById('fab-transfer')?.addEventListener('click', () => { close(); setTimeout(() => openIslemForm('transfer'), 220); });
+  document.getElementById('fab-cari')?.addEventListener('click',     () => { close(); setTimeout(() => openCariler(),             220); });
+  document.getElementById('fab-takvim')?.addEventListener('click',   () => { close(); setTimeout(() => openTakvim(),              220); });
   document.getElementById('fab-iptal')?.addEventListener('click', close);
 }
 
@@ -169,9 +167,14 @@ document.addEventListener('defter:islem-updated', () => {
   showToast('İşlem güncellendi', 'success');
 });
 
+document.addEventListener('defter:open-cariler', () => {
+  openCariler();
+});
+
 subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); });
 subscribe('kasalar',     () => { if (_authenticated) navigate(currentView()); });
 subscribe('kategoriler', () => { if (_authenticated) navigate(currentView()); });
+subscribe('cariler',     () => { if (_authenticated) navigate(currentView()); });
 
 // ─── Service Worker ────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
-import { getIslemler, getKasalar, getKategoriler } from '../state.js';
-import { formatTL, formatTarih } from '../utils.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler } from '../state.js';
+import { formatTL, formatTarih, hesaplaCariBakiye, hesaplaSonrakiVade } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -18,6 +18,7 @@ export function openTakvim() {
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
+    const cariler     = getCariler();
 
     const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
     const dayNetMap = {};
@@ -29,9 +30,27 @@ export function openTakvim() {
       dayNetMap[islem.tarih] = (dayNetMap[islem.tarih] || 0) + net;
     });
 
+    // Build vade map for this month
+    const vadeByGun = {};
+    cariler.filter(c => c.tip === 'tedarikci' && c.vadeTipi && c.vadeTipi !== 'yok').forEach(cari => {
+      let dateStr = null;
+      if (cari.vadeTipi === 'her_ay' && cari.vadeGunu) {
+        const gun    = Number(cari.vadeGunu);
+        const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const day    = Math.min(gun, maxDay);
+        dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      } else if (cari.vadeTipi === 'tarih' && cari.vadeTarih?.startsWith(ayPrefix)) {
+        dateStr = cari.vadeTarih;
+      }
+      if (dateStr) {
+        if (!vadeByGun[dateStr]) vadeByGun[dateStr] = [];
+        vadeByGun[dateStr].push(cari);
+      }
+    });
+
     const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                     'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-    const monthTitle = `${MONTHS[viewMonth]} ${viewYear}`;
+    const monthTitle  = `${MONTHS[viewMonth]} ${viewYear}`;
     const DAY_HEADERS = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
 
     const firstDay = new Date(viewYear, viewMonth, 1);
@@ -39,7 +58,7 @@ export function openTakvim() {
     if (startDow < 0) startDow = 6;
 
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr    = new Date().toISOString().slice(0, 10);
 
     let cells = '';
     for (let i = 0; i < startDow; i++) {
@@ -47,12 +66,13 @@ export function openTakvim() {
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const net = dayNetMap[dateStr];
+      const net     = dayNetMap[dateStr];
       const isToday = dateStr === todayStr;
+      const hasVade = !!vadeByGun[dateStr];
 
       let netHtml = '';
       if (net !== undefined && net !== 0) {
-        const cls = net > 0 ? 'cal-net-pos' : 'cal-net-neg';
+        const cls    = net > 0 ? 'cal-net-pos' : 'cal-net-neg';
         const absStr = formatTL(Math.abs(net));
         netHtml = `<span class="${cls}">${net > 0 ? '+' : '-'}${absStr}</span>`;
       }
@@ -62,6 +82,7 @@ export function openTakvim() {
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
           ${netHtml}
+          ${hasVade ? `<span class="cal-vade-dot">⚠️</span>` : ''}
         </div>`;
     }
 
@@ -98,10 +119,11 @@ export function openTakvim() {
 
     overlay.querySelectorAll('.cal-cell[data-date]').forEach(cell => {
       cell.addEventListener('click', () => {
-        const dateStr    = cell.dataset.date;
+        const dateStr     = cell.dataset.date;
         const gunIslemler = islemler.filter(i => i.tarih === dateStr);
-        if (gunIslemler.length) {
-          showGunDetay(dateStr, gunIslemler, kasalar, kategoriler);
+        const gunVade     = vadeByGun[dateStr] || [];
+        if (gunIslemler.length || gunVade.length) {
+          showGunDetay(dateStr, gunIslemler, kasalar, kategoriler, gunVade, islemler);
         }
       });
     });
@@ -117,7 +139,7 @@ export function openTakvim() {
   render();
 }
 
-function showGunDetay(dateStr, islemler, kasalar, kategoriler) {
+function showGunDetay(dateStr, islemler, kasalar, kategoriler, vadeCari, tumIslemler) {
   if (document.getElementById('gun-detay-modal')) return;
 
   const modal = document.createElement('div');
@@ -138,10 +160,23 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler) {
     return                       { color: 'var(--accent)',  prefix: '',  cls: 'transfer' };
   }
 
+  const vadeHtml = vadeCari.length ? `
+    <div class="gun-vade-section">
+      <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:6px">⚠️ Vadesi Gelen Ödemeler</div>
+      ${vadeCari.map(c => {
+        const bakiye = hesaplaCariBakiye(c.id, tumIslemler);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+          <span style="font-size:13px">${c.ad}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--danger)">${formatTL(Math.abs(bakiye))}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">` : '';
+
   const listHTML = islemler.map(islem => {
     const { color, prefix, cls } = tipInfo(islem.tip);
-    const kasa      = kasalar.find(k => k.id === islem.kasaId);
-    const kategori  = kategoriler.find(k => k.id === islem.kategoriId);
+    const kasa     = kasalar.find(k => k.id === islem.kasaId);
+    const kategori = kategoriler.find(k => k.id === islem.kategoriId);
     let title, iconContent;
 
     if (islem.tip === 'transfer') {
@@ -174,6 +209,8 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler) {
         <button class="modal-close" id="gun-detay-close">✕</button>
       </div>
       <div class="modal-body" style="padding-top:8px">
+        ${vadeHtml}
+        ${islemler.length ? `
         <div class="gun-detay-ozet">
           <span class="gun-ozet-item" style="color:var(--success)">+${formatTL(gunGelir)}</span>
           <span class="gun-ozet-sep">·</span>
@@ -181,7 +218,7 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler) {
           <span class="gun-ozet-sep">·</span>
           <span class="gun-ozet-item" style="color:${netColor}">Net: ${netPrefix}${formatTL(gunNet)}</span>
         </div>
-        <div id="gun-islemler-list">${listHTML}</div>
+        <div id="gun-islemler-list">${listHTML}</div>` : ''}
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="gun-detay-kapat">Kapat</button>
@@ -195,8 +232,8 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler) {
     setTimeout(() => modal.remove(), 220);
   };
 
-  document.getElementById('gun-detay-close')?.addEventListener('click', closeModal);
-  document.getElementById('gun-detay-kapat')?.addEventListener('click', closeModal);
+  modal.querySelector('#gun-detay-close')?.addEventListener('click', closeModal);
+  modal.querySelector('#gun-detay-kapat')?.addEventListener('click', closeModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
   modal.querySelectorAll('.gun-islem-item').forEach(item => {

@@ -80,3 +80,51 @@ export function isValidNumber(value, min = 0) {
   const n = Number(value);
   return !isNaN(n) && isFinite(n) && n >= min;
 }
+
+// ─── Cari Hesap Yardımcıları ───────────────────────────────────
+
+export function hesaplaCariBakiye(cariId, islemler) {
+  return islemler.reduce((toplam, i) => {
+    if (i.cariId !== cariId) return toplam;
+    const t = i.tutar || 0;
+    if (i.cariEtkisi === 'borc_yaz')   return toplam - t;
+    if (i.cariEtkisi === 'borc_cikar') return toplam + t;
+    if (i.cariEtkisi === 'avans_ver')  return toplam + t;
+    if (i.cariEtkisi === 'odeme')      return toplam + t;
+    if (i.cariEtkisi === 'tahsilat')   return toplam - t;
+    return toplam;
+  }, 0);
+}
+
+export function gunFarki(date1, date2) {
+  const d1 = date1 instanceof Date ? date1 : new Date(String(date1) + 'T00:00:00');
+  const d2 = date2 instanceof Date ? date2 : new Date(String(date2) + 'T00:00:00');
+  return Math.round((d1 - d2) / 86400000);
+}
+
+export function hesaplaSonrakiVade(cari, bugunStr) {
+  if (!cari || !cari.vadeTipi || cari.vadeTipi === 'yok') return null;
+  const bugunDate = new Date(bugunStr + 'T00:00:00');
+
+  if (cari.vadeTipi === 'tarih' && cari.vadeTarih) {
+    const vadeDate = new Date(cari.vadeTarih + 'T00:00:00');
+    return vadeDate >= bugunDate ? vadeDate : null;
+  }
+
+  if (cari.vadeTipi === 'her_ay' && cari.vadeGunu) {
+    const gun = Number(cari.vadeGunu);
+    const y   = bugunDate.getFullYear();
+    const m   = bugunDate.getMonth();
+    const cap = d => Math.min(d, new Date(y, m + 1, 0).getDate());
+    let vade  = new Date(y, m, cap(gun));
+    if (vade < bugunDate) {
+      const ny = m === 11 ? y + 1 : y;
+      const nm = (m + 1) % 12;
+      const capN = d => Math.min(d, new Date(ny, nm + 1, 0).getDate());
+      vade = new Date(ny, nm, capN(gun));
+    }
+    return vade;
+  }
+
+  return null;
+}
