@@ -2013,3 +2013,84 @@ select.form-control {
   white-space: nowrap;
   margin-top: 1px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   İŞLEM FORM — KAYDET VE YENİ (Faz 4.6)
+═══════════════════════════════════════════════════════════ */
+
+.if-footer-3btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.if-sag-butonlar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.if-mini-toast {
+  display: none;
+  background: var(--success);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  margin: 0 16px 4px;
+  text-align: center;
+  animation: if-toast-in 0.2s ease;
+}
+
+@keyframes if-toast-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.if-sayac {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@keyframes if-flash {
+  0%   { background: rgba(90, 122, 58, 0.18); }
+  60%  { background: rgba(90, 122, 58, 0.10); }
+  100% { background: transparent; }
+}
+
+.if-flash-success {
+  animation: if-flash 0.7s ease forwards;
+}
+
+.if-ctrl-hint {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  margin-left: 5px;
+  letter-spacing: 0.2px;
+  vertical-align: middle;
+}
+
+@media (max-width: 480px) {
+  .if-footer-3btn {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .if-sag-butonlar {
+    flex-direction: column;
+    width: 100%;
+  }
+  .if-sag-butonlar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .if-ctrl-hint {
+    display: none;
+  }
+}
