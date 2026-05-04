@@ -2094,3 +2094,88 @@ select.form-control {
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   İŞLEMLER — ARAMA KUTUSU + ÖZET KARTI (Faz 4.7)
+═══════════════════════════════════════════════════════════ */
+
+.arama-kutusu-wrap {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0 10px;
+  margin: 0 0 10px;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+
+.arama-kutusu-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.arama-icon {
+  font-size: 15px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.arama-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+.arama-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.arama-temizle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-secondary);
+  padding: 2px 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.arama-temizle:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.arama-ozet-kart {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.arama-ozet-baslik {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.arama-ozet-detaylar {
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  align-items: center;
+}

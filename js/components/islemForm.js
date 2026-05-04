@@ -64,14 +64,15 @@ function buildHTML(kasalar, title, saveLabel, isEdit) {
       </div>
 
       <div class="form-group">
-        <label class="form-label">Tarih <span class="req">*</span></label>
-        <input class="form-control" id="if-tarih" type="date" value="${bugun()}">
-      </div>
-
-      <div class="form-group">
         <label class="form-label">Tutar <span class="req">*</span></label>
         <input class="form-control" id="if-tutar" type="number"
           step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Açıklama <span class="form-label-opt">(isteğe bağlı)</span></label>
+        <input class="form-control" id="if-aciklama" type="text"
+          maxlength="200" placeholder="Hasta adı veya açıklama (isteğe bağlı)" autocomplete="off">
       </div>
 
       <div class="form-group">
@@ -96,9 +97,8 @@ function buildHTML(kasalar, title, saveLabel, isEdit) {
       </div>
 
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Açıklama <span class="form-label-opt">(isteğe bağlı)</span></label>
-        <input class="form-control" id="if-aciklama" type="text"
-          maxlength="200" placeholder="İsteğe bağlı not..." autocomplete="off">
+        <label class="form-label">Tarih <span class="req">*</span></label>
+        <input class="form-control" id="if-tarih" type="date" value="${bugun()}">
       </div>
 
     </div>
