@@ -1,14 +1,20 @@
-import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getAyarlar } from '../state.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
 import {
   formatTL, formatTarih, formatAy, bugun, gunFarki,
-  hesaplaCariBakiye,
-  bugunIslemleri, kasaBugunkiHareket, bugunNetGelirGider, formatTarihUzun
+  kasaBugunkiGelir, kasaBugunkiGider, bugunNetGelirGider, kasaTipiBul, formatTarihUzun
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
 
 function calcMetrics(islemler, ay) {
-  const ayIslemler = islemler.filter(i => i.tarih && i.tarih.startsWith(ay));
+  // Sadece GERÇEK kasa hareketleri (borc_yaz/borc_cikar hariç)
+  const ayIslemler = islemler.filter(i =>
+    i.tarih &&
+    i.tarih.startsWith(ay) &&
+    i.kasaId &&
+    i.cariEtkisi !== 'borc_yaz' &&
+    i.cariEtkisi !== 'borc_cikar'
+  );
   const ayGelir = ayIslemler.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
   const ayGider = ayIslemler.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
   return { ayGelir, ayGider, ayNet: ayGelir - ayGider };
@@ -34,59 +40,71 @@ function kasalarList(kasalar, islemler) {
   }).join('');
 }
 
-function bugunSection(islemler, kasalar, ayarlar, today) {
-  const { net } = bugunNetGelirGider(islemler);
+function bugunSection(islemler, kasalar, today) {
+  const nakitKasa = kasaTipiBul(kasalar, 'nakit');
+  const kartKasa  = kasaTipiBul(kasalar, 'kart', 'kredi');
 
-  // Determine selected kasalar from ayarlar.bugunKartlari (or default to first 3)
-  const bk = ayarlar.bugunKartlari;
-  let secilenler;
-  if (!bk || bk.length === 0) {
-    secilenler = kasalar.slice(0, 3);
-  } else {
-    secilenler = [...bk]
-      .sort((a, b) => a.sira - b.sira)
-      .map(item => kasalar.find(k => k.id === item.kasaId))
-      .filter(Boolean)
-      .slice(0, 3);
+  const nakitGelir = nakitKasa != null ? kasaBugunkiGelir(nakitKasa.id, islemler) : null;
+  const kartGelir  = kartKasa  != null ? kasaBugunkiGelir(kartKasa.id,  islemler) : null;
+  const { gelir: toplamGelir, gider: toplamGider } = bugunNetGelirGider(islemler);
+
+  const nakitLabel = nakitKasa ? `${nakitKasa.emoji} ${nakitKasa.ad}` : '💵 Nakit';
+  const kartLabel  = kartKasa  ? `${kartKasa.emoji} ${kartKasa.ad}`   : '💳 Kart';
+
+  function gelirKartHtml(label, value) {
+    const bulunamadi = value === null;
+    return `<div class="bugun-kart bugun-kart-gelir${bulunamadi ? ' bugun-kart-absent' : ''}">
+      <div class="bugun-kart-label">${label}</div>
+      <div class="bugun-kart-tutar" style="color:${bulunamadi ? 'var(--text-secondary)' : 'var(--success)'}">
+        ${bulunamadi ? '—' : (value > 0 ? '+' : '') + formatTL(value)}
+      </div>
+    </div>`;
   }
 
-  const secilenIds = new Set(secilenler.map(k => k.id));
-  const digerKasas = kasalar.filter(k => !secilenIds.has(k.id));
-
-  const digerItems = digerKasas.map(k => {
-    const h = kasaBugunkiHareket(k.id, islemler);
-    if (!h) return '';
+  // Kasa bazında bugünkü gider (sıfır olanları gizle)
+  const giderRows = kasalar.map(k => {
+    const g = kasaBugunkiGider(k.id, islemler);
+    if (!g) return '';
     return `<div class="bugun-diger-item">
       <span>${k.emoji} ${k.ad}</span>
-      <span style="font-weight:600;color:${h >= 0 ? 'var(--success)' : 'var(--danger)'}">
-        ${h > 0 ? '+' : ''}${formatTL(h)}
-      </span>
+      <span style="color:var(--danger);font-weight:600">-${formatTL(g)}</span>
     </div>`;
   }).filter(Boolean).join('');
 
-  function kart(label, value) {
-    const col = value === 0 ? 'var(--text-secondary)' : value > 0 ? 'var(--success)' : 'var(--danger)';
-    return `<div class="bugun-kart">
-      <div class="bugun-kart-label">${label}</div>
-      <div class="bugun-kart-tutar" style="color:${col}">${value > 0 ? '+' : ''}${formatTL(value)}</div>
-    </div>`;
-  }
+  const giderColor = toplamGider > 0 ? 'var(--danger)' : 'var(--text-secondary)';
+  const giderText  = toplamGider > 0 ? '-' + formatTL(toplamGider) : '0,00 TL';
 
   return `
     <div class="section-header">
       <span class="section-title">Bugün</span>
       <span style="font-size:12px;color:var(--text-secondary)">${formatTarihUzun(today)}</span>
     </div>
-    <div class="bugun-grid">
-      ${kart('Toplam', net)}
-      ${secilenler.map(k => kart(`${k.emoji} ${k.ad}`, kasaBugunkiHareket(k.id, islemler))).join('')}
+
+    <div class="bugun-gelir-grid">
+      ${gelirKartHtml(nakitLabel, nakitGelir)}
+      ${gelirKartHtml(kartLabel,  kartGelir)}
+      <div class="bugun-kart bugun-kart-gelir bugun-kart-vurgulu">
+        <div class="bugun-kart-label">📊 Toplam Gelir</div>
+        <div class="bugun-kart-tutar" style="color:var(--success)">
+          ${toplamGelir > 0 ? '+' : ''}${formatTL(toplamGelir)}
+        </div>
+      </div>
     </div>
-    ${digerItems ? `
-      <div class="bugun-diger-list" id="bugun-diger-list" style="display:none">${digerItems}</div>
-      <button class="btn btn-secondary btn-sm" id="bugun-diger-btn" style="width:100%;margin-bottom:8px">
-        Diğer Kasalar ▼
-      </button>
-    ` : ''}`;
+
+    <div class="bugun-gider-kart">
+      <div class="bugun-gider-header" id="bugun-gider-toggle">
+        <div>
+          <div class="bugun-kart-label">💸 Toplam Gider</div>
+          <div class="bugun-kart-tutar" style="color:${giderColor}">${giderText}</div>
+        </div>
+        ${giderRows ? `<span class="bugun-gider-toggle-btn">▼ Detay</span>` : ''}
+      </div>
+      ${giderRows ? `
+        <div class="bugun-gider-detay" id="bugun-gider-detay" style="display:none">
+          ${giderRows}
+        </div>
+      ` : ''}
+    </div>`;
 }
 
 function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
@@ -132,7 +150,6 @@ function recentList(islemler, kasalar, kategoriler) {
   return son5.map(islem => {
     const kasa     = kasalar.find(k => k.id === islem.kasaId);
     const kategori = kategoriler.find(k => k.id === islem.kategoriId);
-
     let iconContent, iconBg, iconColor, title, amountClass, prefix;
 
     if (islem.tip === 'gelir') {
@@ -180,7 +197,6 @@ export default {
     const kategoriler = getKategoriler();
     const cariler     = getCariler();
     const vadeler     = getVadeler();
-    const ayarlar     = getAyarlar();
     const ay          = bugun().slice(0, 7);
     const today       = bugun();
     const { ayGelir, ayGider, ayNet } = calcMetrics(islemler, ay);
@@ -200,7 +216,7 @@ export default {
         ${metricCard('Kasalar Bakiye', toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger')}
       </div>
 
-      ${bugunSection(islemler, kasalar, ayarlar, today)}
+      ${bugunSection(islemler, kasalar, today)}
 
       ${kasalar.length ? `
         <div class="section-header">
@@ -255,12 +271,14 @@ export default {
       });
     });
 
-    const digerBtn  = document.getElementById('bugun-diger-btn');
-    const digerList = document.getElementById('bugun-diger-list');
-    digerBtn?.addEventListener('click', () => {
-      const open = digerList.style.display !== 'none';
-      digerList.style.display = open ? 'none' : 'block';
-      digerBtn.textContent = open ? 'Diğer Kasalar ▼' : 'Diğer Kasalar ▲';
+    // Gider expand/collapse
+    document.getElementById('bugun-gider-toggle')?.addEventListener('click', () => {
+      const detay = document.getElementById('bugun-gider-detay');
+      const btn   = document.querySelector('.bugun-gider-toggle-btn');
+      if (!detay) return;
+      const open = detay.style.display !== 'none';
+      detay.style.display = open ? 'none' : 'block';
+      if (btn) btn.textContent = open ? '▼ Detay' : '▲ Kapat';
     });
   }
 };

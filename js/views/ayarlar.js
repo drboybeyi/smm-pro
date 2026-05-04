@@ -54,13 +54,12 @@ export default {
         <button class="btn btn-danger btn-block" id="btnCikis">Çıkış Yap</button>
       </div>
 
-      <!-- ─── Dashboard Bugün Kartları ─── -->
-      <div class="card mb-3">
-        <div style="font-weight:700;margin-bottom:4px;color:var(--accent)">📊 Dashboard Bugün Kartları</div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">
-          Bugün bölümünde gösterilecek kasaları seçin — en fazla 3 kasa (Toplam sabit).
+      <!-- ─── Dashboard Bugün Kartları (Devre Dışı) ─── -->
+      <div class="card mb-3" style="opacity:0.5;pointer-events:none">
+        <div style="font-weight:700;margin-bottom:4px;color:var(--accent)">📊 Dashboard Bugün Kartları <span style="font-size:11px;font-weight:400;color:var(--text-secondary)">(Devre Dışı)</span></div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0;line-height:1.5">
+          Bugün bölümü artık otomatik olarak Nakit ve Kart kasalarını gösteriyor.
         </p>
-        <div id="bugun-kartlar-liste"></div>
       </div>
 
       <!-- ─── Form Varsayılanları ─── -->
@@ -147,96 +146,6 @@ export default {
     });
 
     document.getElementById('btnCikis')?.addEventListener('click', () => showLogoutConfirm());
-
-    // ─── Bugün Kartları ────────────────────────────────────────
-    const kasalar = getKasalar();
-    const ayarlar = getAyarlar();
-
-    const bkRaw = ayarlar.bugunKartlari;
-    let kartlari = (bkRaw && bkRaw.length > 0)
-      ? [...bkRaw]
-          .sort((a, b) => a.sira - b.sira)
-          .filter(item => kasalar.find(k => k.id === item.kasaId))
-      : kasalar.slice(0, 3).map((k, i) => ({ kasaId: k.id, sira: i }));
-
-    function saveKartlari() {
-      const normalized = kartlari.map((k, i) => ({ kasaId: k.kasaId, sira: i }));
-      updateAyarlar({ bugunKartlari: normalized }).catch(console.error);
-    }
-
-    function renderKartlariListe() {
-      const container = document.getElementById('bugun-kartlar-liste');
-      if (!container) return;
-
-      const selectedIds = kartlari.map(k => k.kasaId);
-
-      container.innerHTML = kasalar.map(k => {
-        const idx     = selectedIds.indexOf(k.id);
-        const secili  = idx !== -1;
-        const disableAdd    = !secili && kartlari.length >= 3;
-        const disableKaldir = secili && kartlari.length <= 1;
-
-        return `<div class="ayar-kasa-satir">
-          <div class="ayar-kasa-bilgi">
-            <span style="font-size:18px;line-height:1">${k.emoji}</span>
-            <span style="font-size:14px;font-weight:600">${k.ad}</span>
-            ${secili
-              ? `<span class="vade-rozet vade-rozet-odendi">${idx + 1}. sıra</span>`
-              : `<span class="vade-rozet vade-rozet-iptal">Kapalı</span>`}
-          </div>
-          <div class="ayar-kasa-aksiyonlar">
-            ${secili ? `
-              <button class="btn btn-sm btn-secondary" data-kasa-id="${k.id}" data-aksiyon="yukari"
-                ${idx === 0 ? 'disabled' : ''} title="Yukarı">▲</button>
-              <button class="btn btn-sm btn-secondary" data-kasa-id="${k.id}" data-aksiyon="asagi"
-                ${idx === kartlari.length - 1 ? 'disabled' : ''} title="Aşağı">▼</button>
-              <button class="btn btn-sm" style="background:#faeaea;color:var(--danger);border:1px solid #e8c0c0;min-width:36px"
-                data-kasa-id="${k.id}" data-aksiyon="kaldir"
-                ${disableKaldir ? 'disabled' : ''} title="Kaldır">✕</button>
-            ` : `
-              <button class="btn btn-sm btn-primary" data-kasa-id="${k.id}" data-aksiyon="ekle"
-                ${disableAdd ? 'disabled' : ''}>Ekle</button>
-            `}
-          </div>
-        </div>`;
-      }).join('');
-
-      container.querySelectorAll('[data-aksiyon]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const kasaId  = btn.dataset.kasaId;
-          const aksiyon = btn.dataset.aksiyon;
-
-          if (aksiyon === 'ekle') {
-            if (kartlari.length >= 3) return;
-            kartlari = [...kartlari, { kasaId, sira: kartlari.length }];
-
-          } else if (aksiyon === 'kaldir') {
-            if (kartlari.length <= 1) return;
-            kartlari = kartlari.filter(k => k.kasaId !== kasaId);
-
-          } else if (aksiyon === 'yukari') {
-            const idx = kartlari.findIndex(k => k.kasaId === kasaId);
-            if (idx > 0) {
-              kartlari = [...kartlari];
-              [kartlari[idx - 1], kartlari[idx]] = [kartlari[idx], kartlari[idx - 1]];
-            }
-
-          } else if (aksiyon === 'asagi') {
-            const idx = kartlari.findIndex(k => k.kasaId === kasaId);
-            if (idx !== -1 && idx < kartlari.length - 1) {
-              kartlari = [...kartlari];
-              [kartlari[idx], kartlari[idx + 1]] = [kartlari[idx + 1], kartlari[idx]];
-            }
-          }
-
-          kartlari = kartlari.map((k, i) => ({ kasaId: k.kasaId, sira: i }));
-          saveKartlari();
-          renderKartlariListe();
-        });
-      });
-    }
-
-    renderKartlariListe();
 
     // ─── Form Varsayılanları ───────────────────────────────────
     function saveFV() {

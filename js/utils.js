@@ -102,6 +102,16 @@ export function gunFarki(date1, date2) {
   return Math.round((d1 - d2) / 86400000);
 }
 
+// ─── Kasa Hareketi Filtresi ────────────────────────────────────
+// borc_yaz / borc_cikar → kasaId=null, kasa bakiyesini ETKİLEMEZ
+
+export function islemKasaHarekedinSayilirMi(islem) {
+  if (!islem.kasaId) return false;
+  if (islem.cariEtkisi === 'borc_yaz')   return false;
+  if (islem.cariEtkisi === 'borc_cikar') return false;
+  return true;
+}
+
 // ─── Bugün Yardımcıları ────────────────────────────────────────
 
 export function bugunIslemleri(islemler) {
@@ -111,18 +121,45 @@ export function bugunIslemleri(islemler) {
 
 export function kasaBugunkiHareket(kasaId, islemler) {
   const today = bugun();
-  return islemler.filter(i => i.tarih === today).reduce((sum, i) => {
-    if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
-    if (i.tip === 'gider'    && i.kasaId      === kasaId) return sum - (i.tutar || 0);
-    if (i.tip === 'transfer' && i.kasaId      === kasaId) return sum - (i.tutar || 0);
-    if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
-    return sum;
-  }, 0);
+  return islemler
+    .filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'gider'    && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+      if (i.tip === 'transfer' && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+      if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
 }
 
+// Bugün belirli kasaya GELEN para (gelir + transfer giriş)
+export function kasaBugunkiGelir(kasaId, islemler) {
+  const today = bugun();
+  return islemler
+    .filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
+// Bugün belirli kasadan ÇIKAN para (gider + transfer çıkış), pozitif sayı döner
+export function kasaBugunkiGider(kasaId, islemler) {
+  const today = bugun();
+  return islemler
+    .filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gider'    && i.kasaId === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'transfer' && i.kasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
+// Bugün tüm kasalardaki GERÇEK gelir/gider (borc_yaz/borc_cikar dahil değil)
 export function bugunNetGelirGider(islemler) {
   const today  = bugun();
-  const todays = islemler.filter(i => i.tarih === today);
+  const todays = islemler.filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i));
   const gelir  = todays.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
   const gider  = todays.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
   return { gelir, gider, net: gelir - gider };

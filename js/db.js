@@ -110,6 +110,9 @@ export function listenAyarlar(callback) {
 
 export function hesaplaKasaBakiyesi(kasaId, islemler) {
   return islemler.reduce((toplam, islem) => {
+    // borc_yaz / borc_cikar kasa bakiyesini etkilemez
+    const e = islem.cariEtkisi;
+    if (e === 'borc_yaz' || e === 'borc_cikar') return toplam;
     if (islem.tip === 'gelir'    && islem.kasaId      === kasaId) return toplam + (islem.tutar || 0);
     if (islem.tip === 'gider'    && islem.kasaId      === kasaId) return toplam - (islem.tutar || 0);
     if (islem.tip === 'transfer' && islem.kasaId      === kasaId) return toplam - (islem.tutar || 0);

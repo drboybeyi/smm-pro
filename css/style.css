@@ -1825,3 +1825,71 @@ select.form-control {
 .set-toggle input:checked + .set-toggle-slider::before {
   transform: translateX(20px);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD — BUGÜN YENİ LAYOUT (Faz 4.2)
+═══════════════════════════════════════════════════════════ */
+
+.bugun-gelir-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bugun-kart-gelir {
+  background: #f0f7ec;
+  border: 1px solid #c0dca0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.bugun-kart-vurgulu {
+  border-color: var(--success);
+}
+
+.bugun-kart-absent {
+  opacity: 0.4;
+}
+
+.bugun-kart-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bugun-kart-tutar {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bugun-gider-kart {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.bugun-gider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bugun-gider-toggle-btn {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.bugun-gider-detay {
+  border-top: 1px solid var(--border);
+  padding: 4px 14px 8px;
+}
