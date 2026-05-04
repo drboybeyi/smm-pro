@@ -1,5 +1,5 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
-import { formatTL, formatTarih } from '../utils.js';
+import { formatTL, formatTarih, kisaltilmisRakam } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -25,6 +25,7 @@ export function openTakvim() {
     const dayNetMap = {};
     islemler.forEach(islem => {
       if (!islem.tarih || !islem.tarih.startsWith(ayPrefix)) return;
+      if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') return;
       const net = islem.tip === 'gelir' ? (islem.tutar || 0)
                 : islem.tip === 'gider' ? -(islem.tutar || 0)
                 : 0;
@@ -58,9 +59,11 @@ export function openTakvim() {
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const net     = dayNetMap[dateStr];
-      const isToday = dateStr === todayStr;
-      const hasVade = !!vadeByGun[dateStr];
+      const net        = dayNetMap[dateStr];
+      const isToday    = dateStr === todayStr;
+      const gunVadeler = vadeByGun[dateStr] || [];
+      const hasVade    = gunVadeler.length > 0;
+      const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
 
       let netHtml = '';
       if (net !== undefined && net !== 0) {
@@ -69,12 +72,18 @@ export function openTakvim() {
         netHtml = `<span class="${cls}">${net > 0 ? '+' : '-'}${absStr}</span>`;
       }
 
+      let vadeHtml = '';
+      if (hasVade) {
+        const vRenk = isToday ? '#b83030' : 'var(--warning)';
+        vadeHtml = `<span class="cal-vade-tutar" style="color:${vRenk}">💸${kisaltilmisRakam(vadeToplam)}</span>`;
+      }
+
       cells += `
         <div class="cal-cell${isToday ? ' cal-today' : ''}${net !== undefined ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
           ${netHtml}
-          ${hasVade ? `<span class="cal-vade-dot">⚠️</span>` : ''}
+          ${vadeHtml}
         </div>`;
     }
 
@@ -112,7 +121,11 @@ export function openTakvim() {
     overlay.querySelectorAll('.cal-cell[data-date]').forEach(cell => {
       cell.addEventListener('click', () => {
         const dateStr     = cell.dataset.date;
-        const gunIslemler = islemler.filter(i => i.tarih === dateStr);
+        const gunIslemler = islemler.filter(i =>
+          i.tarih === dateStr &&
+          i.cariEtkisi !== 'borc_yaz' &&
+          i.cariEtkisi !== 'borc_cikar'
+        );
         const gunVadeler  = vadeByGun[dateStr] || [];
         if (gunIslemler.length || gunVadeler.length) {
           showGunDetay(dateStr, gunIslemler, kasalar, kategoriler, gunVadeler, cariler, islemler);
@@ -141,6 +154,7 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, caril
 
   let gunGelir = 0, gunGider = 0;
   islemler.forEach(i => {
+    if (i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar') return;
     if (i.tip === 'gelir') gunGelir += (i.tutar || 0);
     if (i.tip === 'gider') gunGider += (i.tutar || 0);
   });

@@ -2002,3 +2002,14 @@ select.form-control {
 .cal-today-vade-pulse {
   animation: vade-pulse 2s ease-in-out infinite;
 }
+
+.cal-vade-tutar {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}

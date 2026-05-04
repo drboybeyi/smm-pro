@@ -140,10 +140,10 @@ function bugunOdeKarti(vadeler, cariler, today) {
 
 function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
   const yaklaşanlar = vadeler
-    .filter(v => v.durum === 'bekliyor')
+    .filter(v => v.vadeTarih && (v.durum === 'bekliyor' || !v.durum))
     .map(v => {
       const fark = gunFarki(v.vadeTarih, today);
-      if (fark <= 0 || fark > 7) return null;
+      if (!isFinite(fark) || fark <= 0 || fark > 7) return null;
       const cari = cariler.find(c => c.id === v.cariId);
       if (!cari) return null;
       return { cari, vade: v, fark };

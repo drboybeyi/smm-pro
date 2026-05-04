@@ -209,6 +209,13 @@ export function islemTutarFormati(islem) {
   return { tutar: t, renk: 'var(--text-primary)' };
 }
 
+export function kisaltilmisRakam(sayi) {
+  if (!sayi || sayi <= 0) return '0';
+  if (sayi >= 1_000_000) return (sayi / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (sayi >= 1_000)     return (sayi / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(Math.round(sayi));
+}
+
 // ─── Vade Yardımcıları ─────────────────────────────────────────
 
 export function bugunVadeleri(vadeler) {
