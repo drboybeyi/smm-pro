@@ -1,5 +1,5 @@
-import { getIslemler, getKasalar, getKategoriler, getCariler } from '../state.js';
-import { formatTL, formatTarih, hesaplaCariBakiye, hesaplaSonrakiVade } from '../utils.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
+import { formatTL, formatTarih } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -19,6 +19,7 @@ export function openTakvim() {
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
     const cariler     = getCariler();
+    const vadeler     = getVadeler();
 
     const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
     const dayNetMap = {};
@@ -30,23 +31,14 @@ export function openTakvim() {
       dayNetMap[islem.tarih] = (dayNetMap[islem.tarih] || 0) + net;
     });
 
-    // Build vade map for this month
+    // Build vade map from vadeler state (durum=bekliyor, this month)
     const vadeByGun = {};
-    cariler.filter(c => c.tip === 'tedarikci' && c.vadeTipi && c.vadeTipi !== 'yok').forEach(cari => {
-      let dateStr = null;
-      if (cari.vadeTipi === 'her_ay' && cari.vadeGunu) {
-        const gun    = Number(cari.vadeGunu);
-        const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-        const day    = Math.min(gun, maxDay);
-        dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      } else if (cari.vadeTipi === 'tarih' && cari.vadeTarih?.startsWith(ayPrefix)) {
-        dateStr = cari.vadeTarih;
-      }
-      if (dateStr) {
-        if (!vadeByGun[dateStr]) vadeByGun[dateStr] = [];
-        vadeByGun[dateStr].push(cari);
-      }
-    });
+    vadeler
+      .filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix))
+      .forEach(v => {
+        if (!vadeByGun[v.vadeTarih]) vadeByGun[v.vadeTarih] = [];
+        vadeByGun[v.vadeTarih].push(v);
+      });
 
     const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                     'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -121,9 +113,9 @@ export function openTakvim() {
       cell.addEventListener('click', () => {
         const dateStr     = cell.dataset.date;
         const gunIslemler = islemler.filter(i => i.tarih === dateStr);
-        const gunVade     = vadeByGun[dateStr] || [];
-        if (gunIslemler.length || gunVade.length) {
-          showGunDetay(dateStr, gunIslemler, kasalar, kategoriler, gunVade, islemler);
+        const gunVadeler  = vadeByGun[dateStr] || [];
+        if (gunIslemler.length || gunVadeler.length) {
+          showGunDetay(dateStr, gunIslemler, kasalar, kategoriler, gunVadeler, cariler, islemler);
         }
       });
     });
@@ -139,7 +131,7 @@ export function openTakvim() {
   render();
 }
 
-function showGunDetay(dateStr, islemler, kasalar, kategoriler, vadeCari, tumIslemler) {
+function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, cariler, tumIslemler) {
   if (document.getElementById('gun-detay-modal')) return;
 
   const modal = document.createElement('div');
@@ -160,14 +152,15 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, vadeCari, tumIsle
     return                       { color: 'var(--accent)',  prefix: '',  cls: 'transfer' };
   }
 
-  const vadeHtml = vadeCari.length ? `
+  const vadeHtml = gunVadeler.length ? `
     <div class="gun-vade-section">
       <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:6px">⚠️ Vadesi Gelen Ödemeler</div>
-      ${vadeCari.map(c => {
-        const bakiye = hesaplaCariBakiye(c.id, tumIslemler);
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-          <span style="font-size:13px">${c.ad}</span>
-          <span style="font-size:13px;font-weight:700;color:var(--danger)">${formatTL(Math.abs(bakiye))}</span>
+      ${gunVadeler.map(v => {
+        const cari = cariler.find(c => c.id === v.cariId);
+        return `<div class="gun-vade-row" data-cari-id="${v.cariId}"
+                    style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;cursor:pointer">
+          <span style="font-size:13px">${cari?.ad || '—'}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--danger)">${formatTL(v.tutar)}</span>
         </div>`;
       }).join('')}
     </div>
@@ -243,6 +236,17 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, vadeCari, tumIsle
       if (!islem) return;
       closeModal();
       setTimeout(() => openIslemDetay(islem), 240);
+    });
+  });
+
+  modal.querySelectorAll('.gun-vade-row').forEach(row => {
+    row.addEventListener('click', () => {
+      closeModal();
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('defter:open-cari-detay', {
+          detail: { cariId: row.dataset.cariId }
+        }));
+      }, 240);
     });
   });
 }

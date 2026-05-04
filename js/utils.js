@@ -102,6 +102,47 @@ export function gunFarki(date1, date2) {
   return Math.round((d1 - d2) / 86400000);
 }
 
+// ─── Bugün Yardımcıları ────────────────────────────────────────
+
+export function bugunIslemleri(islemler) {
+  const today = bugun();
+  return islemler.filter(i => i.tarih === today);
+}
+
+export function kasaBugunkiHareket(kasaId, islemler) {
+  const today = bugun();
+  return islemler.filter(i => i.tarih === today).reduce((sum, i) => {
+    if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
+    if (i.tip === 'gider'    && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+    if (i.tip === 'transfer' && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+    if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
+    return sum;
+  }, 0);
+}
+
+export function bugunNetGelirGider(islemler) {
+  const today  = bugun();
+  const todays = islemler.filter(i => i.tarih === today);
+  const gelir  = todays.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
+  const gider  = todays.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
+  return { gelir, gider, net: gelir - gider };
+}
+
+export function kasaTipiBul(kasalar, ...anahtarlar) {
+  return kasalar.find(k => {
+    const ad = k.ad.toLowerCase();
+    return anahtarlar.some(a => ad.includes(a.toLowerCase()));
+  }) || null;
+}
+
+export function formatTarihUzun(dateStr) {
+  if (!dateStr) return '';
+  const GUNLER = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${d} ${AYLAR_TR[m - 1]} ${y} ${GUNLER[date.getDay()]}`;
+}
+
 export function hesaplaSonrakiVade(cari, bugunStr) {
   if (!cari || !cari.vadeTipi || cari.vadeTipi === 'yok') return null;
   const bugunDate = new Date(bugunStr + 'T00:00:00');

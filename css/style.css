@@ -1534,3 +1534,213 @@ select.form-control {
 ═══════════════════════════════════════════════════════════ */
 
 .mb-3 { margin-bottom: 12px; }
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD — BUGÜN SECTION
+═══════════════════════════════════════════════════════════ */
+
+.bugun-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bugun-kart {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bugun-kart-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bugun-kart-tutar {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bugun-diger-list {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.bugun-diger-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bugun-diger-item:last-child {
+  border-bottom: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VADE PLANI MODAL
+═══════════════════════════════════════════════════════════ */
+
+.vp-borc-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.vp-satir {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.vp-tutar,
+.vp-tarih {
+  font-size: 14px;
+}
+
+.vp-sil-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--danger);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vp-sil-btn:hover {
+  background: #faeaea;
+}
+
+.vp-ozet {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.vp-ozet strong {
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ DETAY — VADE SATIRI
+═══════════════════════════════════════════════════════════ */
+
+.vade-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.vade-satir:last-child {
+  border-bottom: none;
+}
+
+.vade-satir-bilgi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.vade-satir-tarih {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.vade-satir-tutar {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.vade-satir-aksiyon {
+  flex-shrink: 0;
+}
+
+.vade-rozet {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.vade-rozet-bekliyor {
+  background: #e8f0ff;
+  color: #4a6bbf;
+  border: 1px solid #c0d0f0;
+}
+
+.vade-rozet-yakin {
+  background: #fff4e0;
+  color: var(--warning);
+  border: 1px solid #e8c090;
+}
+
+.vade-rozet-gecmis {
+  background: #faeaea;
+  color: var(--danger);
+  border: 1px solid #e8c0c0;
+}
+
+.vade-rozet-odendi {
+  background: #e8f4e8;
+  color: var(--success);
+  border: 1px solid #c0dca0;
+}
+
+.vade-rozet-iptal {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.vade-ozet {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.vade-ozet strong {
+  color: var(--text-primary);
+}

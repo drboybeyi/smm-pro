@@ -5,6 +5,7 @@ const state = {
   kasalar:     [],
   kategoriler: [],
   cariler:     [],
+  vadeler:     [],
   ayarlar:     {}
 };
 
@@ -29,6 +30,7 @@ export const getIslemler    = () => state.islemler;
 export const getKasalar     = () => state.kasalar;
 export const getKategoriler = () => state.kategoriler;
 export const getCariler     = () => state.cariler;
+export const getVadeler     = () => state.vadeler;
 export const getAyarlar     = () => state.ayarlar;
 
 // ─── Setters ──────────────────────────────────────────────────────────────────
@@ -51,6 +53,11 @@ export function setKategoriler(liste) {
 export function setCariler(liste) {
   state.cariler = liste;
   publish('cariler', state.cariler);
+}
+
+export function setVadeler(liste) {
+  state.vadeler = liste;
+  publish('vadeler', state.vadeler);
 }
 
 export function setAyarlar(ayarlar) {

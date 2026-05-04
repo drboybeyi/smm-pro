@@ -1,18 +1,20 @@
 import { onAuthChange } from './firebase-config.js';
 import {
   setCurrentUser,
-  listenIslemler, listenKasalar, listenKategoriler, listenAyarlar, listenCariler,
+  listenIslemler, listenKasalar, listenKategoriler, listenAyarlar, listenCariler, listenVadeler,
   checkAndCreateDefaults, checkAndCreateDefaultCariler
 } from './db.js';
 import {
   initState,
-  setIslemler, setKasalar, setKategoriler, setAyarlar, setCariler,
+  getCariler,
+  setIslemler, setKasalar, setKategoriler, setAyarlar, setCariler, setVadeler,
   subscribe
 } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
 import { openTakvim } from './views/takvim.js';
 import { openCariler } from './views/cariler.js';
+import { openCariDetay } from './views/cariDetay.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
 import Dashboard   from './views/dashboard.js';
@@ -96,7 +98,8 @@ function startApp(user) {
   const u3 = listenKategoriler(liste => setKategoriler(liste));
   const u4 = listenAyarlar(ayarlar   => setAyarlar(ayarlar));
   const u5 = listenCariler(liste     => setCariler(liste));
-  _unsubListeners = [u1, u2, u3, u4, u5];
+  const u6 = listenVadeler(liste     => setVadeler(liste));
+  _unsubListeners = [u1, u2, u3, u4, u5, u6];
 
   checkAndCreateDefaults(user.uid).catch(console.error);
   checkAndCreateDefaultCariler(user.uid).catch(console.error);
@@ -113,6 +116,7 @@ function stopApp() {
   setKasalar([]);
   setKategoriler([]);
   setCariler([]);
+  setVadeler([]);
   hideAppUI();
   showLogin();
 }
@@ -171,10 +175,18 @@ document.addEventListener('defter:open-cariler', () => {
   openCariler();
 });
 
+document.addEventListener('defter:open-cari-detay', e => {
+  const { cariId } = e.detail || {};
+  if (!cariId) return;
+  const cari = getCariler().find(c => c.id === cariId);
+  if (cari) openCariDetay(cari);
+});
+
 subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); });
 subscribe('kasalar',     () => { if (_authenticated) navigate(currentView()); });
 subscribe('kategoriler', () => { if (_authenticated) navigate(currentView()); });
 subscribe('cariler',     () => { if (_authenticated) navigate(currentView()); });
+subscribe('vadeler',     () => { if (_authenticated) navigate(currentView()); });
 
 // ─── Service Worker ────────────────────────────────────────────
 

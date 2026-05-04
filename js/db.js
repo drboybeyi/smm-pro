@@ -204,3 +204,38 @@ export async function checkAndCreateDefaultCariler(uid) {
     }
   }
 }
+
+// ─── VADELER ──────────────────────────────────────────────────
+
+export async function addVade(vadeData) {
+  const path   = getUserPath('vadeler');
+  const newRef = push(ref(db, path));
+  const data   = { ...vadeData, id: newRef.key, olusturmaTarihi: Date.now() };
+  await set(newRef, data);
+  return data;
+}
+
+export async function updateVade(id, updates) {
+  await update(ref(db, `${getUserPath('vadeler')}/${id}`), updates);
+}
+
+export async function deleteVade(id) {
+  await remove(ref(db, `${getUserPath('vadeler')}/${id}`));
+}
+
+export function listenVadeler(callback) {
+  const r = ref(db, getUserPath('vadeler'));
+  return onValue(r, snap => {
+    const data  = snap.val() || {};
+    const liste = Object.values(data)
+      .sort((a, b) => (a.vadeTarih || '').localeCompare(b.vadeTarih || ''));
+    callback(liste);
+  });
+}
+
+export async function vadeleriOdendiYap(vadeId, odemeIslemId) {
+  await update(ref(db, `${getUserPath('vadeler')}/${vadeId}`), {
+    durum: 'odendi',
+    odemeIslemId,
+  });
+}

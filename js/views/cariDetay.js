@@ -1,12 +1,13 @@
-import { getCariler, getIslemler, getKasalar, getKategoriler, subscribe } from '../state.js';
+import { getCariler, getIslemler, getKasalar, getKategoriler, getVadeler, subscribe } from '../state.js';
 import {
   hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki,
   formatTL, formatTarih, bugun
 } from '../utils.js';
-import { updateCari, addIslem } from '../db.js';
+import { updateCari, addIslem, vadeleriOdendiYap } from '../db.js';
 import { show as showToast } from '../components/toast.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 import { openCariForm } from '../components/cariForm.js';
+import { openVadePlani, openVadeEkle } from './vadePlani.js';
 
 const ETKI_LABEL = {
   borc_yaz:   '📋 Borç',
@@ -47,13 +48,13 @@ function bakiyeCard(bakiye, tip) {
   </div>`;
 }
 
-function vadeCard(cari, bugunStr) {
+function vadeCardCari(cari, bugunStr) {
   const vade = hesaplaSonrakiVade(cari, bugunStr);
   if (!vade) return '';
-  const fark  = gunFarki(vade, bugunStr);
+  const fark = gunFarki(vade, bugunStr);
   if (fark < 0) return '';
-  const acil  = fark <= 7;
-  const text  = fark === 0 ? 'Bugün!' : `${fark} gün sonra`;
+  const acil   = fark <= 7;
+  const text   = fark === 0 ? 'Bugün!' : `${fark} gün sonra`;
   const periyot = cari.vadeTipi === 'her_ay'
     ? `Her ayın ${cari.vadeGunu}. günü`
     : formatTarih(cari.vadeTarih);
@@ -78,6 +79,65 @@ function aksiyonBtns(tip) {
   ];
 }
 
+function vadeDurumRozet(v, today) {
+  if (v.durum === 'odendi') return '<span class="vade-rozet vade-rozet-odendi">✓ Ödendi</span>';
+  if (v.durum === 'iptal')  return '<span class="vade-rozet vade-rozet-iptal">İptal</span>';
+  const fark = gunFarki(v.vadeTarih, today);
+  if (fark < 0)  return '<span class="vade-rozet vade-rozet-gecmis">Gecikti</span>';
+  if (fark <= 7) return '<span class="vade-rozet vade-rozet-yakin">Yakın</span>';
+  return '<span class="vade-rozet vade-rozet-bekliyor">Bekliyor</span>';
+}
+
+function vadeSection(cariId, vadeler, today, bakiye) {
+  const cariVadeler = vadeler
+    .filter(v => v.cariId === cariId)
+    .sort((a, b) => (a.vadeTarih || '').localeCompare(b.vadeTarih || ''));
+
+  const absBorc = Math.abs(bakiye);
+  const planli  = cariVadeler
+    .filter(v => v.durum === 'bekliyor')
+    .reduce((s, v) => s + (v.tutar || 0), 0);
+  const kalan   = absBorc - planli;
+
+  const ozetHtml = cariVadeler.length > 0 && absBorc > 0.01
+    ? `<div class="vade-ozet">
+        <span>Planlanmış: <strong>${formatTL(planli)}</strong></span>
+        <span>Borç: <strong>${formatTL(absBorc)}</strong></span>
+        <span style="color:${Math.abs(kalan) < 0.01 ? 'var(--success)' : kalan > 0 ? 'var(--warning)' : 'var(--danger)'}">
+          ${Math.abs(kalan) < 0.01 ? '✓ Tam planlandı' : 'Kalan: <strong>' + formatTL(Math.abs(kalan)) + '</strong>'}
+        </span>
+      </div>`
+    : '';
+
+  const listHtml = cariVadeler.length === 0
+    ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0 4px">Henüz vade planı yok.</p>`
+    : cariVadeler.map(v => {
+        const odeBtn = v.durum === 'bekliyor'
+          ? `<button class="btn btn-sm btn-success cd-vade-ode" data-vade-id="${v.id}" data-tutar="${v.tutar}">Öde</button>`
+          : '';
+        return `
+          <div class="vade-satir">
+            <div class="vade-satir-bilgi">
+              <span class="vade-satir-tarih">${formatTarih(v.vadeTarih)}</span>
+              <span class="vade-satir-tutar">${formatTL(v.tutar)}</span>
+              ${vadeDurumRozet(v, today)}
+            </div>
+            <div class="vade-satir-aksiyon">${odeBtn}</div>
+          </div>`;
+      }).join('');
+
+  return `
+    <div class="section-header" style="margin-top:16px">
+      <span class="section-title" style="font-size:13px">📅 Vade Planı</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary" id="cd-vade-plan">Plan Oluştur</button>
+        <button class="btn btn-sm btn-secondary" id="cd-vade-ekle">+ Ekle</button>
+      </div>
+    </div>
+    ${ozetHtml}
+    <div id="cd-vadeler">${listHtml}</div>`;
+}
+
 export function openCariDetay(cariInput) {
   if (document.getElementById('cari-detay-overlay')) return;
 
@@ -91,6 +151,7 @@ export function openCariDetay(cariInput) {
   document.body.appendChild(overlay);
 
   const unsubIslemler = subscribe('islemler', renderContent);
+  const unsubVadeler  = subscribe('vadeler',  renderContent);
   const unsubCariler  = subscribe('cariler', () => {
     const updated = getCariler().find(c => c.id === cariId);
     if (!updated) { close(); return; }
@@ -101,10 +162,12 @@ export function openCariDetay(cariInput) {
   function renderContent() {
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
-    const kategoriler = getKategoriler();
+    const vadeler     = getVadeler();
     const today       = bugun();
     const bakiye      = hesaplaCariBakiye(cariId, islemler);
-    const hareketler  = islemler.filter(i => i.cariId === cariId);
+    const hareketler  = islemler
+      .filter(i => i.cariId === cariId)
+      .sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0));
     const btns        = aksiyonBtns(cari.tip);
 
     const hareketHtml = hareketler.length === 0
@@ -143,13 +206,15 @@ export function openCariDetay(cariInput) {
         <div class="modal-body" style="padding-top:12px">
 
           ${bakiyeCard(bakiye, cari.tip)}
-          ${vadeCard(cari, today)}
+          ${vadeCardCari(cari, today)}
 
           <div class="cari-aksiyonlar">
             ${btns.map(b => `
               <button class="btn ${b.cls} cari-aksiyon-btn" data-etkisi="${b.etkisi}">${b.label}</button>
             `).join('')}
           </div>
+
+          ${vadeSection(cariId, vadeler, today, bakiye)}
 
           <div class="section-header" style="margin-top:16px">
             <span class="section-title" style="font-size:13px">Hareket Geçmişi (${hareketler.length})</span>
@@ -175,6 +240,23 @@ export function openCariDetay(cariInput) {
       });
     });
 
+    overlay.querySelector('#cd-vade-plan')?.addEventListener('click', () => {
+      openVadePlani(cari, bakiye);
+    });
+
+    overlay.querySelector('#cd-vade-ekle')?.addEventListener('click', () => {
+      openVadeEkle(cari);
+    });
+
+    overlay.querySelectorAll('.cd-vade-ode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const vadeId = btn.dataset.vadeId;
+        const tutar  = parseFloat(btn.dataset.tutar) || 0;
+        const vade   = getVadeler().find(v => v.id === vadeId);
+        if (vade) openCariIslemForm(cari, 'odeme', vade, tutar);
+      });
+    });
+
     overlay.querySelectorAll('.hareket-item').forEach(item => {
       item.addEventListener('click', () => {
         const id    = item.dataset.islemId;
@@ -186,6 +268,7 @@ export function openCariDetay(cariInput) {
 
   function close() {
     unsubIslemler();
+    unsubVadeler();
     unsubCariler();
     overlay.classList.add('modal-closing');
     setTimeout(() => overlay.remove(), 220);
@@ -246,7 +329,7 @@ function showSilOnay(cari, onSuccess) {
 
 // ─── Cari İşlem Formu ─────────────────────────────────────────
 
-function openCariIslemForm(cari, etkiTipi) {
+function openCariIslemForm(cari, etkiTipi, vade = null, onayTutar = null) {
   if (document.getElementById('cif-overlay')) return;
 
   const kasalar     = getKasalar();
@@ -281,6 +364,11 @@ function openCariIslemForm(cari, etkiTipi) {
         : `<p style="font-size:13px;color:var(--text-secondary)">Önce kategori ekleyin.</p>`)
     : '';
 
+  const onayTutarStr = onayTutar != null ? String(onayTutar) : '';
+  const vadeLabel    = vade
+    ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Vade: ${formatTarih(vade.vadeTarih)}</div>`
+    : '';
+
   const overlay = document.createElement('div');
   overlay.id = 'cif-overlay';
   overlay.className = 'modal-overlay';
@@ -293,6 +381,7 @@ function openCariIslemForm(cari, etkiTipi) {
         <button class="modal-close" id="cif-close">✕</button>
       </div>
       <div class="modal-body">
+        ${vadeLabel}
         <div class="form-group">
           <label class="form-label">Tarih <span class="req">*</span></label>
           <input class="form-control" id="cif-tarih" type="date" value="${bugun()}">
@@ -300,7 +389,8 @@ function openCariIslemForm(cari, etkiTipi) {
         <div class="form-group">
           <label class="form-label">Tutar <span class="req">*</span></label>
           <input class="form-control" id="cif-tutar" type="number"
-            step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off">
+            step="0.01" min="0.01" inputmode="decimal" placeholder="0,00"
+            autocomplete="off" value="${onayTutarStr}">
         </div>
         ${needsKasa ? `
         <div class="form-group">
@@ -359,18 +449,13 @@ function openCariIslemForm(cari, etkiTipi) {
     overlay.querySelectorAll('.error').forEach(e => e.classList.remove('error'));
 
     let valid = true;
-    const tarihEl = overlay.querySelector('#cif-tarih');
-    const tutarEl = overlay.querySelector('#cif-tutar');
-
-    if (!tarih) { tarihEl.classList.add('error'); valid = false; }
-    if (!tutarStr || isNaN(tutarVal) || tutarVal < 0.01) { tutarEl.classList.add('error'); valid = false; }
-
-    if (needsKasa && !kasaId) {
-      const kasaEl = overlay.querySelector('#cif-kasa');
-      kasaEl?.classList.add('error');
-      valid = false;
+    if (!tarih) { overlay.querySelector('#cif-tarih').classList.add('error'); valid = false; }
+    if (!tutarStr || isNaN(tutarVal) || tutarVal < 0.01) {
+      overlay.querySelector('#cif-tutar').classList.add('error'); valid = false;
     }
-
+    if (needsKasa && !kasaId) {
+      overlay.querySelector('#cif-kasa')?.classList.add('error'); valid = false;
+    }
     if (!valid) return;
 
     const islemTip = ['tahsilat', 'borc_cikar'].includes(etkiTipi) ? 'gelir' : 'gider';
@@ -388,7 +473,8 @@ function openCariIslemForm(cari, etkiTipi) {
     btn.disabled = true;
 
     try {
-      await addIslem(islemData);
+      const kayit = await addIslem(islemData);
+      if (vade) await vadeleriOdendiYap(vade.id, kayit.id);
       close();
       showToast(TITLE[etkiTipi] + ' kaydedildi', 'success');
       document.dispatchEvent(new CustomEvent('defter:islem-saved'));
