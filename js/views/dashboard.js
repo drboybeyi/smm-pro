@@ -1,12 +1,11 @@
-import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getAyarlar } from '../state.js';
 import {
   formatTL, formatTarih, formatAy, bugun, gunFarki,
-  hesaplaCariBakiye, hesaplaSonrakiVade,
-  bugunIslemleri, kasaBugunkiHareket, bugunNetGelirGider, kasaTipiBul, formatTarihUzun
+  hesaplaCariBakiye,
+  bugunIslemleri, kasaBugunkiHareket, bugunNetGelirGider, formatTarihUzun
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
-import { openIslemDetay } from '../components/islemDetay.js';
 
 function calcMetrics(islemler, ay) {
   const ayIslemler = islemler.filter(i => i.tarih && i.tarih.startsWith(ay));
@@ -35,20 +34,24 @@ function kasalarList(kasalar, islemler) {
   }).join('');
 }
 
-function bugunSection(islemler, kasalar, kategoriler, today) {
+function bugunSection(islemler, kasalar, ayarlar, today) {
   const { net } = bugunNetGelirGider(islemler);
-  const todayList = bugunIslemleri(islemler);
 
-  const nakitKasa = kasaTipiBul(kasalar, 'nakit');
-  const kartKasa  = kasaTipiBul(kasalar, 'kart');
-  const bankaKasa = kasaTipiBul(kasalar, 'banka');
+  // Determine selected kasalar from ayarlar.bugunKartlari (or default to first 3)
+  const bk = ayarlar.bugunKartlari;
+  let secilenler;
+  if (!bk || bk.length === 0) {
+    secilenler = kasalar.slice(0, 3);
+  } else {
+    secilenler = [...bk]
+      .sort((a, b) => a.sira - b.sira)
+      .map(item => kasalar.find(k => k.id === item.kasaId))
+      .filter(Boolean)
+      .slice(0, 3);
+  }
 
-  const nakitH = nakitKasa ? kasaBugunkiHareket(nakitKasa.id, islemler) : null;
-  const kartH  = kartKasa  ? kasaBugunkiHareket(kartKasa.id,  islemler) : null;
-  const bankaH = bankaKasa ? kasaBugunkiHareket(bankaKasa.id, islemler) : null;
-
-  const mainIds    = [nakitKasa?.id, kartKasa?.id, bankaKasa?.id].filter(Boolean);
-  const digerKasas = kasalar.filter(k => !mainIds.includes(k.id));
+  const secilenIds = new Set(secilenler.map(k => k.id));
+  const digerKasas = kasalar.filter(k => !secilenIds.has(k.id));
 
   const digerItems = digerKasas.map(k => {
     const h = kasaBugunkiHareket(k.id, islemler);
@@ -61,8 +64,7 @@ function bugunSection(islemler, kasalar, kategoriler, today) {
     </div>`;
   }).filter(Boolean).join('');
 
-  function kart(label, value, show) {
-    if (!show) return '';
+  function kart(label, value) {
     const col = value === 0 ? 'var(--text-secondary)' : value > 0 ? 'var(--success)' : 'var(--danger)';
     return `<div class="bugun-kart">
       <div class="bugun-kart-label">${label}</div>
@@ -70,41 +72,21 @@ function bugunSection(islemler, kasalar, kategoriler, today) {
     </div>`;
   }
 
-  const islemHtml = todayList.length === 0
-    ? '<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">Bugün işlem yok.</p>'
-    : todayList.map(i => {
-        const kas = kasalar.find(k => k.id === i.kasaId);
-        const kat = kategoriler.find(k => k.id === i.kategoriId);
-        const cls    = i.tip === 'gelir' ? 'income' : i.tip === 'gider' ? 'expense' : 'transfer';
-        const prefix = i.tip === 'gelir' ? '+' : i.tip === 'gider' ? '-' : '';
-        const title  = i.aciklama || kat?.ad || (i.tip === 'transfer' ? 'Transfer' : i.tip);
-        return `<div class="list-item bugun-islem-item" data-islem-id="${i.id}" style="cursor:pointer">
-          <div class="list-item-body">
-            <div class="list-item-title">${title}</div>
-            <div class="list-item-subtitle">${kas?.ad || ''}</div>
-          </div>
-          <div class="list-item-amount ${cls}">${prefix}${formatTL(i.tutar)}</div>
-        </div>`;
-      }).join('');
-
   return `
     <div class="section-header">
       <span class="section-title">Bugün</span>
       <span style="font-size:12px;color:var(--text-secondary)">${formatTarihUzun(today)}</span>
     </div>
     <div class="bugun-grid">
-      ${kart('Toplam', net, true)}
-      ${kart('Nakit',  nakitH ?? 0, !!nakitKasa)}
-      ${kart('Kart',   kartH  ?? 0, !!kartKasa)}
-      ${kart('Banka',  bankaH ?? 0, !!bankaKasa)}
+      ${kart('Toplam', net)}
+      ${secilenler.map(k => kart(`${k.emoji} ${k.ad}`, kasaBugunkiHareket(k.id, islemler))).join('')}
     </div>
     ${digerItems ? `
       <div class="bugun-diger-list" id="bugun-diger-list" style="display:none">${digerItems}</div>
       <button class="btn btn-secondary btn-sm" id="bugun-diger-btn" style="width:100%;margin-bottom:8px">
         Diğer Kasalar ▼
       </button>
-    ` : ''}
-    <div id="bugun-islemler">${islemHtml}</div>`;
+    ` : ''}`;
 }
 
 function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
@@ -198,6 +180,7 @@ export default {
     const kategoriler = getKategoriler();
     const cariler     = getCariler();
     const vadeler     = getVadeler();
+    const ayarlar     = getAyarlar();
     const ay          = bugun().slice(0, 7);
     const today       = bugun();
     const { ayGelir, ayGider, ayNet } = calcMetrics(islemler, ay);
@@ -217,7 +200,7 @@ export default {
         ${metricCard('Kasalar Bakiye', toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger')}
       </div>
 
-      ${bugunSection(islemler, kasalar, kategoriler, today)}
+      ${bugunSection(islemler, kasalar, ayarlar, today)}
 
       ${kasalar.length ? `
         <div class="section-header">
@@ -272,20 +255,12 @@ export default {
       });
     });
 
-    const digerBtn = document.getElementById('bugun-diger-btn');
+    const digerBtn  = document.getElementById('bugun-diger-btn');
     const digerList = document.getElementById('bugun-diger-list');
     digerBtn?.addEventListener('click', () => {
       const open = digerList.style.display !== 'none';
       digerList.style.display = open ? 'none' : 'block';
       digerBtn.textContent = open ? 'Diğer Kasalar ▼' : 'Diğer Kasalar ▲';
-    });
-
-    document.querySelectorAll('.bugun-islem-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id    = item.dataset.islemId;
-        const islem = getIslemler().find(i => i.id === id);
-        if (islem) openIslemDetay(islem);
-      });
     });
   }
 };
