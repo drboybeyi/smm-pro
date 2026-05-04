@@ -1,6 +1,6 @@
-import { getKasalar, getKategoriler } from '../state.js';
+import { getKasalar, getKategoriler, getCariler } from '../state.js';
 import { deleteIslem } from '../db.js';
-import { formatTL, formatTarih } from '../utils.js';
+import { formatTL, formatTarih, islemTipiEtiketi, islemTutarFormati } from '../utils.js';
 import { show as showToast } from './toast.js';
 import { openIslemForm } from './islemForm.js';
 
@@ -9,20 +9,24 @@ export function openIslemDetay(islem) {
 
   const kasalar     = getKasalar();
   const kategoriler = getKategoriler();
+  const cariler     = getCariler();
   const kasa        = kasalar.find(k => k.id === islem.kasaId);
   const hedefKasa   = kasalar.find(k => k.id === islem.hedefKasaId);
   const kategori    = kategoriler.find(k => k.id === islem.kategoriId);
+  const cari        = islem.cariId ? cariler.find(c => c.id === islem.cariId) : null;
 
-  let tipIcon, tipLabel, tipColor, amountCls, prefix;
-  if (islem.tip === 'gelir') {
-    tipIcon = '▲'; tipLabel = 'Gelir'; tipColor = 'var(--success)';
-    amountCls = 'income'; prefix = '+';
-  } else if (islem.tip === 'gider') {
-    tipIcon = '▼'; tipLabel = 'Gider'; tipColor = 'var(--danger)';
-    amountCls = 'expense'; prefix = '-';
+  const etiket              = islemTipiEtiketi(islem);
+  const { tutar: tutarStr, renk: tutarRenk } = islemTutarFormati(islem);
+
+  let tipColor;
+  if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') {
+    tipColor = 'var(--warning)';
+  } else if (islem.tip === 'gelir' || islem.cariEtkisi === 'tahsilat') {
+    tipColor = 'var(--success)';
+  } else if (islem.tip === 'transfer') {
+    tipColor = 'var(--accent)';
   } else {
-    tipIcon = '↔'; tipLabel = 'Transfer'; tipColor = 'var(--accent)';
-    amountCls = 'transfer'; prefix = '';
+    tipColor = 'var(--danger)';
   }
 
   const olusturmaTarih = islem.olusturmaTarihi
@@ -35,21 +39,26 @@ export function openIslemDetay(islem) {
   overlay.innerHTML = `
     <div class="modal-box" style="max-width:440px">
       <div class="modal-header">
-        <span class="modal-title" style="display:flex;align-items:center;gap:8px">
-          <span style="color:${tipColor}">${tipIcon}</span>
-          <span>${tipLabel} &middot; ${formatTarih(islem.tarih)}</span>
+        <span class="modal-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="color:${tipColor};font-weight:700">${etiket}</span>
+          <span style="color:var(--text-secondary);font-weight:400">&middot; ${formatTarih(islem.tarih)}</span>
         </span>
         <button class="modal-close" id="detay-close">✕</button>
       </div>
       <div class="modal-body">
 
         <div style="text-align:center;padding:16px 0 20px">
-          <div class="list-item-amount ${amountCls}" style="font-size:28px;font-weight:800;display:block">
-            ${prefix}${formatTL(islem.tutar)}
+          <div style="font-size:28px;font-weight:800;color:${tutarRenk}">
+            ${tutarStr}
           </div>
         </div>
 
         <div class="detay-rows">
+          ${cari ? `
+            <div class="detay-row">
+              <span class="detay-label">Cari</span>
+              <span class="detay-value">${cari.ad}</span>
+            </div>` : ''}
           ${kasa ? `
             <div class="detay-row">
               <span class="detay-label">Kasa</span>
@@ -111,7 +120,7 @@ function showSilOnay(islem, kategori, onSuccess) {
 
   const label = islem.tip === 'transfer'
     ? 'Transfer'
-    : (kategori?.ad || (islem.tip === 'gelir' ? 'Gelir' : 'Gider'));
+    : (kategori?.ad || islemTipiEtiketi(islem));
 
   const modal = document.createElement('div');
   modal.id = 'sil-onay-modal';

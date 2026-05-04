@@ -1,7 +1,8 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
 import {
   formatTL, formatTarih, formatAy, bugun, gunFarki,
-  kasaBugunkiGelir, kasaBugunkiGider, bugunNetGelirGider, kasaTipiBul, formatTarihUzun
+  kasaBugunkiGelir, kasaBugunkiGider, bugunNetGelirGider, kasaTipiBul, formatTarihUzun,
+  islemTipiEtiketi, islemTutarFormati
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
@@ -142,38 +143,49 @@ function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
     <div class="card mb-3" style="padding:4px 16px">${inner}</div>`;
 }
 
-function recentList(islemler, kasalar, kategoriler) {
-  const son5 = islemler.slice(0, 5);
+function recentList(islemler, kasalar, kategoriler, cariler) {
+  const son5 = [...islemler]
+    .sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0))
+    .slice(0, 5);
   if (!son5.length) {
     return '<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Henüz işlem yok</p>';
   }
   return son5.map(islem => {
     const kasa     = kasalar.find(k => k.id === islem.kasaId);
     const kategori = kategoriler.find(k => k.id === islem.kategoriId);
-    let iconContent, iconBg, iconColor, title, amountClass, prefix;
+    const cari     = islem.cariId ? cariler.find(c => c.id === islem.cariId) : null;
+    const { tutar: tutarStr, renk: tutarRenk } = islemTutarFormati(islem);
 
-    if (islem.tip === 'gelir') {
-      iconContent = kategori?.emoji || '▲';
-      iconBg      = '#e8f4e8';
-      iconColor   = 'var(--success)';
-      amountClass = 'income';
-      prefix      = '+';
-      title       = islem.aciklama || kategori?.ad || 'Gelir';
-    } else if (islem.tip === 'gider') {
-      iconContent = kategori?.emoji || '▼';
-      iconBg      = '#faeaea';
-      iconColor   = 'var(--danger)';
-      amountClass = 'expense';
-      prefix      = '-';
-      title       = islem.aciklama || kategori?.ad || 'Gider';
-    } else {
+    let iconContent, iconBg, iconColor, title;
+
+    if (islem.tip === 'transfer') {
       const hedefKasa = kasalar.find(k => k.id === islem.hedefKasaId);
       iconContent = '↔';
       iconBg      = 'var(--bg-secondary)';
       iconColor   = 'var(--accent)';
-      amountClass = 'transfer';
-      prefix      = '';
       title       = `${kasa?.ad || '?'} → ${hedefKasa?.ad || '?'}`;
+    } else if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') {
+      const etiket = islemTipiEtiketi(islem);
+      iconContent  = '📋';
+      iconBg       = '#fff4e0';
+      iconColor    = 'var(--warning)';
+      title        = islem.aciklama || etiket + (cari ? ` — ${cari.ad}` : '');
+    } else if (islem.cariEtkisi) {
+      const etiket = islemTipiEtiketi(islem);
+      iconContent  = kategori?.emoji || (islem.tip === 'gelir' ? '▲' : '▼');
+      iconBg       = islem.tip === 'gelir' ? '#e8f4e8' : '#faeaea';
+      iconColor    = islem.tip === 'gelir' ? 'var(--success)' : 'var(--danger)';
+      title        = islem.aciklama || etiket + (cari ? ` — ${cari.ad}` : '');
+    } else if (islem.tip === 'gelir') {
+      iconContent  = kategori?.emoji || '▲';
+      iconBg       = '#e8f4e8';
+      iconColor    = 'var(--success)';
+      title        = islem.aciklama || kategori?.ad || 'Gelir';
+    } else {
+      iconContent  = kategori?.emoji || '▼';
+      iconBg       = '#faeaea';
+      iconColor    = 'var(--danger)';
+      title        = islem.aciklama || kategori?.ad || 'Gider';
     }
 
     return `
@@ -185,7 +197,7 @@ function recentList(islemler, kasalar, kategoriler) {
           <div class="list-item-title">${title}</div>
           <div class="list-item-subtitle">${formatTarih(islem.tarih)} · ${kasa?.ad || (islem.cariId ? 'Cari' : '?')}</div>
         </div>
-        <div class="list-item-amount ${amountClass}">${prefix}${formatTL(islem.tutar)}</div>
+        <div class="list-item-amount" style="color:${tutarRenk}">${tutarStr}</div>
       </div>`;
   }).join('');
 }
@@ -234,7 +246,7 @@ export default {
         <span class="section-title">Son İşlemler</span>
         <a href="#islemler" class="btn btn-secondary btn-sm">Tümü →</a>
       </div>
-      ${recentList(islemler, kasalar, kategoriler)}
+      ${recentList(islemler, kasalar, kategoriler, cariler)}
 
       <div class="section-header">
         <span class="section-title">Hızlı İşlem</span>

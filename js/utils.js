@@ -180,6 +180,35 @@ export function formatTarihUzun(dateStr) {
   return `${d} ${AYLAR_TR[m - 1]} ${y} ${GUNLER[date.getDay()]}`;
 }
 
+export function islemTipiEtiketi(islem) {
+  if (islem.cariEtkisi === 'borc_yaz')   return '📋 Borç';
+  if (islem.cariEtkisi === 'borc_cikar') return '📋 Borç Çıkar';
+  if (islem.cariEtkisi === 'tahsilat')   return '💰 Tahsilat';
+  if (islem.cariEtkisi === 'odeme')      return '💸 Ödeme';
+  if (islem.cariEtkisi === 'avans_ver')  return '👤 Avans';
+  if (islem.tip === 'gelir')    return '▲ Gelir';
+  if (islem.tip === 'gider')    return '▼ Gider';
+  if (islem.tip === 'transfer') return '↔ Transfer';
+  return islem.tip || '?';
+}
+
+export function islemTutarFormati(islem) {
+  const t = formatTL(islem.tutar);
+  if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') {
+    return { tutar: t, renk: 'var(--warning)' };
+  }
+  if (islem.tip === 'gelir' || islem.cariEtkisi === 'tahsilat') {
+    return { tutar: '+' + t, renk: 'var(--success)' };
+  }
+  if (islem.tip === 'gider' || islem.cariEtkisi === 'odeme' || islem.cariEtkisi === 'avans_ver') {
+    return { tutar: '-' + t, renk: 'var(--danger)' };
+  }
+  if (islem.tip === 'transfer') {
+    return { tutar: '↔ ' + t, renk: 'var(--accent)' };
+  }
+  return { tutar: t, renk: 'var(--text-primary)' };
+}
+
 export function hesaplaSonrakiVade(cari, bugunStr) {
   if (!cari || !cari.vadeTipi || cari.vadeTipi === 'yok') return null;
   const bugunDate = new Date(bugunStr + 'T00:00:00');

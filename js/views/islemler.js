@@ -1,67 +1,69 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler } from '../state.js';
-import { formatTL, formatTarih } from '../utils.js';
+import { formatTarih, islemTipiEtiketi, islemTutarFormati } from '../utils.js';
 import { openIslemForm } from '../components/islemForm.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 let currentFilter = 'tumu';
 
-const ETKI_KISA = {
-  borc_yaz:   '📋 Borç',
-  borc_cikar: '📋 Alacak',
-  odeme:      '💸 Ödeme',
-  avans_ver:  '💳 Avans',
-  tahsilat:   '💰 Tahsilat',
-};
-
-function tipInfo(tip) {
-  if (tip === 'gelir')    return { icon: '▲', bg: '#e8f4e8', color: 'var(--success)', cls: 'income',   prefix: '+' };
-  if (tip === 'gider')    return { icon: '▼', bg: '#faeaea', color: 'var(--danger)',  cls: 'expense',  prefix: '-' };
-  return                         { icon: '↔', bg: 'var(--bg-secondary)', color: 'var(--accent)', cls: 'transfer', prefix: '' };
-}
-
 function islemItem(islem, kasalar, kategoriler, cariler) {
-  const { icon, bg, color, cls, prefix } = tipInfo(islem.tip);
   const kasa     = kasalar.find(k => k.id === islem.kasaId);
   const kategori = kategoriler.find(k => k.id === islem.kategoriId);
   const cari     = islem.cariId ? cariler.find(c => c.id === islem.cariId) : null;
+  const { tutar: tutarStr, renk: tutarRenk } = islemTutarFormati(islem);
 
-  let iconContent, title, subtitle;
+  let iconContent, iconBg, iconColor, title, subtitle;
 
   if (islem.tip === 'transfer') {
     const hedefKasa = kasalar.find(k => k.id === islem.hedefKasaId);
     iconContent = '↔';
-    title    = `${kasa?.ad || '?'} → ${hedefKasa?.ad || '?'}`;
-    subtitle = `${formatTarih(islem.tarih)} · Transfer`;
+    iconBg      = 'var(--bg-secondary)';
+    iconColor   = 'var(--accent)';
+    title       = `${kasa?.ad || '?'} → ${hedefKasa?.ad || '?'}`;
+    subtitle    = `${formatTarih(islem.tarih)} · Transfer`;
+  } else if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') {
+    const etiket = islemTipiEtiketi(islem);
+    iconContent  = '📋';
+    iconBg       = '#fff4e0';
+    iconColor    = 'var(--warning)';
+    title        = islem.aciklama || etiket + (cari ? ` — ${cari.ad}` : '');
+    subtitle     = formatTarih(islem.tarih) + (cari ? ` · ${cari.ad}` : '');
   } else if (islem.cariEtkisi) {
-    const etkiLabel = ETKI_KISA[islem.cariEtkisi] || islem.cariEtkisi;
-    iconContent = kategori?.emoji || icon;
-    title    = islem.aciklama || etkiLabel + (cari ? ` — ${cari.ad}` : '');
-    const kasaAd = kasa ? kasa.ad : null;
-    subtitle = `${formatTarih(islem.tarih)}` +
-               (kasaAd ? ` · ${kasaAd}` : '') +
-               (cari ? ` · <span class="cari-rozet">${etkiLabel}</span>` : '');
+    const etiket = islemTipiEtiketi(islem);
+    iconContent  = kategori?.emoji || (islem.tip === 'gelir' ? '▲' : '▼');
+    iconBg       = islem.tip === 'gelir' ? '#e8f4e8' : '#faeaea';
+    iconColor    = islem.tip === 'gelir' ? 'var(--success)' : 'var(--danger)';
+    title        = islem.aciklama || etiket + (cari ? ` — ${cari.ad}` : '');
+    subtitle     = formatTarih(islem.tarih) +
+                   (kasa ? ` · ${kasa.ad}` : '') +
+                   (cari ? ` · <span class="cari-rozet">${etiket}</span>` : '');
   } else {
-    iconContent = kategori?.emoji || icon;
-    title    = islem.aciklama || kategori?.ad || (islem.tip === 'gelir' ? 'Gelir' : 'Gider');
-    subtitle = `${formatTarih(islem.tarih)} · ${kasa?.ad || '?'}`;
+    iconContent  = kategori?.emoji || (islem.tip === 'gelir' ? '▲' : '▼');
+    iconBg       = islem.tip === 'gelir' ? '#e8f4e8' : '#faeaea';
+    iconColor    = islem.tip === 'gelir' ? 'var(--success)' : 'var(--danger)';
+    title        = islem.aciklama || kategori?.ad || (islem.tip === 'gelir' ? 'Gelir' : 'Gider');
+    subtitle     = `${formatTarih(islem.tarih)} · ${kasa?.ad || '?'}`;
   }
 
   return `
     <div class="list-item" data-islem-id="${islem.id}" style="cursor:pointer">
-      <div class="list-item-icon" style="background:${bg};color:${color};font-size:16px">
+      <div class="list-item-icon" style="background:${iconBg};color:${iconColor};font-size:16px">
         ${iconContent}
       </div>
       <div class="list-item-body">
         <div class="list-item-title">${title}</div>
         <div class="list-item-subtitle">${subtitle}</div>
       </div>
-      <div class="list-item-amount ${cls}">${prefix}${formatTL(islem.tutar)}</div>
+      <div class="list-item-amount" style="color:${tutarRenk}">${tutarStr}</div>
     </div>`;
 }
 
+function sortByOlusturma(liste) {
+  return [...liste].sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0));
+}
+
 function filterIslemler(islemler, filter) {
-  if (filter === 'tumu')   return islemler;
-  if (filter === 'cari')   return islemler.filter(i => i.cariId);
+  if (filter === 'tumu') return islemler;
+  if (filter === 'cari') return islemler.filter(i => i.cariId);
   return islemler.filter(i => i.tip === filter);
 }
 
@@ -81,7 +83,8 @@ export default {
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
     const cariler     = getCariler();
-    const filtered    = filterIslemler(islemler, currentFilter);
+    const sorted      = sortByOlusturma(islemler);
+    const filtered    = filterIslemler(sorted, currentFilter);
 
     const activeClass = f => currentFilter === f ? 'active' : '';
 
@@ -126,7 +129,8 @@ export default {
         const kasalar     = getKasalar();
         const kategoriler = getKategoriler();
         const cariler     = getCariler();
-        const filtered    = filterIslemler(islemler, currentFilter);
+        const sorted      = sortByOlusturma(islemler);
+        const filtered    = filterIslemler(sorted, currentFilter);
 
         const listEl = document.getElementById('islemler-list');
         listEl.innerHTML =
