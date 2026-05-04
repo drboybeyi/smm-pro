@@ -83,8 +83,9 @@ function vadeDurumRozet(v, today) {
   if (v.durum === 'odendi') return '<span class="vade-rozet vade-rozet-odendi">✓ Ödendi</span>';
   if (v.durum === 'iptal')  return '<span class="vade-rozet vade-rozet-iptal">İptal</span>';
   const fark = gunFarki(v.vadeTarih, today);
-  if (fark < 0)  return '<span class="vade-rozet vade-rozet-gecmis">Gecikti</span>';
-  if (fark <= 7) return '<span class="vade-rozet vade-rozet-yakin">Yakın</span>';
+  if (fark < 0)   return '<span class="vade-rozet vade-rozet-gecmis">⚠ Gecikmiş</span>';
+  if (fark === 0) return '<span class="vade-rozet vade-rozet-bugun">BUGÜN ÖDEYİN</span>';
+  if (fark <= 3)  return '<span class="vade-rozet vade-rozet-yakin">Yakın</span>';
   return '<span class="vade-rozet vade-rozet-bekliyor">Bekliyor</span>';
 }
 
@@ -112,11 +113,18 @@ function vadeSection(cariId, vadeler, today, bakiye) {
   const listHtml = cariVadeler.length === 0
     ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0 4px">Henüz vade planı yok.</p>`
     : cariVadeler.map(v => {
+        let satirCls = '';
+        if (v.durum === 'bekliyor') {
+          const fark = gunFarki(v.vadeTarih, today);
+          if (fark < 0)   satirCls = ' vade-satir-gecmis';
+          else if (fark === 0) satirCls = ' vade-satir-bugun';
+          else if (fark <= 3)  satirCls = ' vade-satir-yakin';
+        }
         const odeBtn = v.durum === 'bekliyor'
           ? `<button class="btn btn-sm btn-success cd-vade-ode" data-vade-id="${v.id}" data-tutar="${v.tutar}">Öde</button>`
           : '';
         return `
-          <div class="vade-satir">
+          <div class="vade-satir${satirCls}">
             <div class="vade-satir-bilgi">
               <span class="vade-satir-tarih">${formatTarih(v.vadeTarih)}</span>
               <span class="vade-satir-tutar">${formatTL(v.tutar)}</span>
@@ -485,4 +493,8 @@ function openCariIslemForm(cari, etkiTipi, vade = null, onayTutar = null) {
   });
 
   setTimeout(() => overlay.querySelector('#cif-tutar')?.focus(), 80);
+}
+
+export function openOdemeFormu(cari, vade) {
+  openCariIslemForm(cari, 'odeme', vade, vade.tutar);
 }

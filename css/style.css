@@ -1893,3 +1893,112 @@ select.form-control {
   border-top: 1px solid var(--border);
   padding: 4px 14px 8px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD — BUGÜN ÖDE KARTI (Faz 4.4)
+═══════════════════════════════════════════════════════════ */
+
+.dash-bugun-ode-kart {
+  background: linear-gradient(135deg, #d94f2a 0%, #b83030 100%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  color: white;
+}
+
+.dash-bugun-ode-baslik {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.dash-bugun-ode-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+
+.dash-bugun-ode-satir:last-child {
+  margin-bottom: 0;
+}
+
+.dash-bugun-ode-cari {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dash-bugun-ode-tutar {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.dash-bugun-ode-btn {
+  background: white;
+  color: #b83030;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.dash-bugun-ode-btn:active {
+  opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARİ DETAY — VADE SATIRI RENKLENDİRME (Faz 4.4)
+═══════════════════════════════════════════════════════════ */
+
+.vade-satir.vade-satir-bugun {
+  background: #fff4e0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-bottom-color: #e8c090;
+}
+
+.vade-satir.vade-satir-gecmis {
+  background: #fdf0f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-bottom-color: #e8c0c0;
+}
+
+.vade-satir.vade-satir-yakin {
+  background: #fffde8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border-bottom-color: #e8e0a0;
+}
+
+.vade-rozet-bugun {
+  background: #d94f2a;
+  color: white;
+  border: none;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAKVİM — PULSE ANİMASYON (Faz 4.4)
+═══════════════════════════════════════════════════════════ */
+
+@keyframes vade-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 55, 35, 0.45); }
+  50%       { box-shadow: 0 0 0 6px rgba(200, 55, 35, 0); }
+}
+
+.cal-today-vade-pulse {
+  animation: vade-pulse 2s ease-in-out infinite;
+}

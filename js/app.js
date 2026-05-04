@@ -6,7 +6,7 @@ import {
 } from './db.js';
 import {
   initState,
-  getCariler,
+  getCariler, getVadeler,
   setIslemler, setKasalar, setKategoriler, setAyarlar, setCariler, setVadeler,
   subscribe
 } from './state.js';
@@ -56,6 +56,24 @@ function navigate(viewKey) {
     item.classList.toggle('active', item.dataset.view === viewKey)
   );
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// ─── Tab Title ─────────────────────────────────────────────────
+
+function updateTabTitle() {
+  const vadeler = getVadeler();
+  const today   = bugun();
+  const d       = new Date(today + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  const yarin   = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const bugunSayisi = vadeler.filter(v => v.durum === 'bekliyor' && v.vadeTarih === today).length;
+  if (bugunSayisi > 0) {
+    document.title = `(${bugunSayisi}) Defter Pro`;
+    return;
+  }
+  const yarinVar = vadeler.some(v => v.durum === 'bekliyor' && v.vadeTarih === yarin);
+  document.title = yarinVar ? '(!) Defter Pro' : 'Defter Pro';
 }
 
 // ─── Header ────────────────────────────────────────────────────
@@ -186,7 +204,12 @@ subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); })
 subscribe('kasalar',     () => { if (_authenticated) navigate(currentView()); });
 subscribe('kategoriler', () => { if (_authenticated) navigate(currentView()); });
 subscribe('cariler',     () => { if (_authenticated) navigate(currentView()); });
-subscribe('vadeler',     () => { if (_authenticated) navigate(currentView()); });
+subscribe('vadeler', () => {
+  if (_authenticated) {
+    navigate(currentView());
+    updateTabTitle();
+  }
+});
 
 // ─── Service Worker ────────────────────────────────────────────
 

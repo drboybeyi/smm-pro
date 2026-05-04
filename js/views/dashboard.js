@@ -6,6 +6,7 @@ import {
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
+import { openOdemeFormu } from './cariDetay.js';
 
 function calcMetrics(islemler, ay) {
   // Sadece GERÇEK kasa hareketleri (borc_yaz/borc_cikar hariç)
@@ -108,12 +109,41 @@ function bugunSection(islemler, kasalar, today) {
     </div>`;
 }
 
+function bugunOdeKarti(vadeler, cariler, today) {
+  const bugunler = vadeler.filter(v => v.durum === 'bekliyor' && v.vadeTarih === today);
+  if (!bugunler.length) return '';
+
+  const rows = bugunler.map(v => {
+    const cari = cariler.find(c => c.id === v.cariId);
+    if (!cari) return '';
+    return `
+      <div class="dash-bugun-ode-satir">
+        <div>
+          <div class="dash-bugun-ode-cari">${cari.ad}</div>
+          <div class="dash-bugun-ode-tutar">${formatTL(v.tutar)}</div>
+        </div>
+        <button class="dash-bugun-ode-btn"
+          data-cari-id="${cari.id}" data-vade-id="${v.id}" data-tutar="${v.tutar}">
+          Hemen Öde
+        </button>
+      </div>`;
+  }).filter(Boolean).join('');
+
+  if (!rows) return '';
+
+  return `
+    <div class="dash-bugun-ode-kart">
+      <div class="dash-bugun-ode-baslik">🚨 BUGÜN ÖDEMELERİNİZ</div>
+      ${rows}
+    </div>`;
+}
+
 function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
   const yaklaşanlar = vadeler
     .filter(v => v.durum === 'bekliyor')
     .map(v => {
       const fark = gunFarki(v.vadeTarih, today);
-      if (fark < 0 || fark > 7) return null;
+      if (fark <= 0 || fark > 7) return null;
       const cari = cariler.find(c => c.id === v.cariId);
       if (!cari) return null;
       return { cari, vade: v, fark };
@@ -123,20 +153,23 @@ function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
 
   const inner = yaklaşanlar.length === 0
     ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">✓ Yaklaşan ödeme yok</p>`
-    : yaklaşanlar.map(({ cari, vade, fark }) => `
-        <div class="dash-vade-row" data-cari-id="${cari.id}"
-             style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
-          <div>
-            <div style="font-size:14px;font-weight:600">${cari.ad}</div>
-            <div style="font-size:12px;color:var(--warning)">${fark === 0 ? 'Bugün!' : fark + ' gün sonra'} · ${formatTarih(vade.vadeTarih)}</div>
-          </div>
-          <span style="font-size:14px;font-weight:700;color:var(--danger)">${formatTL(vade.tutar)}</span>
-        </div>`).join('');
+    : yaklaşanlar.map(({ cari, vade, fark }) => {
+        const renk = fark === 1 ? 'var(--danger)' : fark <= 3 ? 'var(--warning)' : 'var(--text-secondary)';
+        return `
+          <div class="dash-vade-row" data-cari-id="${cari.id}"
+               style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+            <div>
+              <div style="font-size:14px;font-weight:600">${cari.ad}</div>
+              <div style="font-size:12px;color:${renk}">${fark} gün sonra · ${formatTarih(vade.vadeTarih)}</div>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:var(--danger)">${formatTL(vade.tutar)}</span>
+          </div>`;
+      }).join('');
 
   return `
     <div class="section-header">
       <button class="section-title" id="dashCariBtn" style="background:none;border:none;font-weight:600;font-size:15px;color:var(--text-primary);cursor:pointer;padding:0;font-family:inherit">
-        ⚠️ Yaklaşan Ödemeler
+        ⚠️ Yaklaşan Ödemeler (7 gün)
       </button>
       <a class="btn btn-secondary btn-sm" id="dashTumCariler">Tümü →</a>
     </div>
@@ -221,6 +254,8 @@ export default {
         <button disabled>&#8250;</button>
       </div>
 
+      ${bugunOdeKarti(vadeler, cariler, today)}
+
       <div class="metrics-grid">
         ${metricCard('Bu ay Gelir',    ayGelir,      'success')}
         ${metricCard('Bu ay Gider',    ayGider,      'danger')}
@@ -280,6 +315,16 @@ export default {
         document.dispatchEvent(new CustomEvent('defter:open-cari-detay', {
           detail: { cariId: row.dataset.cariId }
         }));
+      });
+    });
+
+    document.querySelectorAll('.dash-bugun-ode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cariId = btn.dataset.cariId;
+        const vadeId = btn.dataset.vadeId;
+        const cari   = getCariler().find(c => c.id === cariId);
+        const vade   = getVadeler().find(v => v.id === vadeId);
+        if (cari && vade) openOdemeFormu(cari, vade);
       });
     });
 

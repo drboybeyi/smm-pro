@@ -70,7 +70,7 @@ export function openTakvim() {
       }
 
       cells += `
-        <div class="cal-cell${isToday ? ' cal-today' : ''}${net !== undefined ? ' cal-has-data' : ''}"
+        <div class="cal-cell${isToday ? ' cal-today' : ''}${net !== undefined ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
           ${netHtml}

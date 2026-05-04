@@ -209,6 +209,43 @@ export function islemTutarFormati(islem) {
   return { tutar: t, renk: 'var(--text-primary)' };
 }
 
+// ─── Vade Yardımcıları ─────────────────────────────────────────
+
+export function bugunVadeleri(vadeler) {
+  const today = bugun();
+  return vadeler.filter(v => v.durum === 'bekliyor' && v.vadeTarih === today);
+}
+
+export function yaklaşanVadeler(vadeler, gunSayisi = 7) {
+  const today = bugun();
+  return vadeler.filter(v => {
+    if (v.durum !== 'bekliyor') return false;
+    const fark = gunFarki(v.vadeTarih, today);
+    return fark >= 1 && fark <= gunSayisi;
+  });
+}
+
+export function gecikmisVadeler(vadeler) {
+  const today = bugun();
+  return vadeler.filter(v => v.durum === 'bekliyor' && gunFarki(v.vadeTarih, today) < 0);
+}
+
+export function vadeRenkSinifi(vade, todayStr) {
+  if (vade.durum !== 'bekliyor') return '';
+  const fark = gunFarki(vade.vadeTarih, todayStr);
+  if (fark < 0)   return 'vade-sinif-gecmis';
+  if (fark === 0) return 'vade-sinif-bugun';
+  if (fark <= 3)  return 'vade-sinif-yakin';
+  return '';
+}
+
+export function gunFarkiMetni(tarih1, tarih2) {
+  const fark = gunFarki(tarih1, tarih2);
+  if (fark === 0) return 'Bugün';
+  if (fark > 0)   return `${fark} gün sonra`;
+  return `${Math.abs(fark)} gün gecikti`;
+}
+
 export function hesaplaSonrakiVade(cari, bugunStr) {
   if (!cari || !cari.vadeTipi || cari.vadeTipi === 'yok') return null;
   const bugunDate = new Date(bugunStr + 'T00:00:00');
