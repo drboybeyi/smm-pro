@@ -1,8 +1,5 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
-import {
-  formatTL, formatTarih, kisaltilmisRakam,
-  islemKasaHarekedinSayilirMi, gunKasaOzeti
-} from '../utils.js';
+import { formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -26,31 +23,16 @@ export function openTakvim() {
 
     const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
 
-    // Per-day, per-kasa net hareketi
-    const dayKasaMap = {};
-    islemler.forEach(islem => {
-      if (!islem.tarih || !islem.tarih.startsWith(ayPrefix)) return;
-      if (!islemKasaHarekedinSayilirMi(islem)) return;
-      const date = islem.tarih;
-      if (!dayKasaMap[date]) dayKasaMap[date] = {};
-      const add = (kasaId, amt) => {
-        dayKasaMap[date][kasaId] = (dayKasaMap[date][kasaId] || 0) + amt;
-      };
-      if (islem.tip === 'gelir')    add(islem.kasaId, islem.tutar || 0);
-      else if (islem.tip === 'gider') add(islem.kasaId, -(islem.tutar || 0));
-      else if (islem.tip === 'transfer') {
-        add(islem.kasaId, -(islem.tutar || 0));
-        if (islem.hedefKasaId) add(islem.hedefKasaId, islem.tutar || 0);
-      }
-    });
+    // Hangi günlerde işlem var (sadece tıklanabilir hücre tespiti için)
+    const daysWithIslemler = new Set(
+      islemler
+        .filter(i => i.tarih?.startsWith(ayPrefix) &&
+                     i.cariEtkisi !== 'borc_yaz' &&
+                     i.cariEtkisi !== 'borc_cikar')
+        .map(i => i.tarih)
+    );
 
-    // Day net totals (for has-data class)
-    const dayNetMap = {};
-    Object.entries(dayKasaMap).forEach(([date, nets]) => {
-      dayNetMap[date] = Object.values(nets).reduce((s, n) => s + n, 0);
-    });
-
-    // Build vade map
+    // Vade map
     const vadeByGun = {};
     vadeler
       .filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix))
@@ -82,28 +64,7 @@ export function openTakvim() {
       const gunVadeler = vadeByGun[dateStr] || [];
       const hasVade    = gunVadeler.length > 0;
       const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
-      const hasData    = dayNetMap[dateStr] !== undefined;
-
-      // Per-kasa rows for this day (sorted by |net| desc)
-      const kasaNets = dayKasaMap[dateStr]
-        ? Object.entries(dayKasaMap[dateStr])
-            .map(([kasaId, net]) => ({ kasa: kasalar.find(k => k.id === kasaId), net }))
-            .filter(item => item.kasa && item.net !== 0)
-            .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))
-        : [];
-
-      const visible = kasaNets.slice(0, 2);
-      const extras  = kasaNets.length - visible.length;
-
-      let kasaHtml = visible.map(({ kasa, net }) => {
-        const cls = net > 0 ? 'cal-net-pos' : 'cal-net-neg';
-        const sign = net > 0 ? '+' : '-';
-        return `<span class="${cls} cal-kasa-satir">${kasa.emoji}${sign}${kisaltilmisRakam(Math.abs(net))}</span>`;
-      }).join('');
-
-      if (extras > 0) {
-        kasaHtml += `<span class="cal-cell-extras">+${extras}</span>`;
-      }
+      const hasData    = daysWithIslemler.has(dateStr);
 
       let vadeHtml = '';
       if (hasVade) {
@@ -115,7 +76,6 @@ export function openTakvim() {
         <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
-          ${kasaHtml}
           ${vadeHtml}
         </div>`;
     }
@@ -213,14 +173,14 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, caril
     </div>
     <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">` : '';
 
-  // Kasa hareketleri bölümü
+  // Kasa hareketleri
   const kasaOzeti = gunKasaOzeti(dateStr, kasalar, tumIslemler);
   const kasaHtml = kasaOzeti.length ? `
     <div class="gun-kasa-section">
       <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px">💰 Kasa Hareketleri</div>
       ${kasaOzeti.map(({ ad, emoji, gelir, gider, net }) => {
-        const netRenk  = net > 0 ? 'var(--success)' : net < 0 ? 'var(--danger)' : 'var(--text-secondary)';
-        const netSign  = net > 0 ? '+' : '';
+        const netRenk = net > 0 ? 'var(--success)' : net < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+        const netSign = net > 0 ? '+' : '';
         return `<div class="gun-kasa-satir">
           <span>${emoji} ${ad}</span>
           <span style="font-size:12px;color:var(--text-secondary)">

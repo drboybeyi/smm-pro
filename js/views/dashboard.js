@@ -1,40 +1,52 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getTarihAraligi, setTarihAraligi } from '../state.js';
 import {
   formatTL, formatTarih, bugun, gunFarki,
-  kasaTipiBul, formatTarihUzun, aralikIcindeMi, aralikBasligi,
-  kasaAralikGelir, kasaAralikGider, aralikNetGelirGider,
-  islemTipiEtiketi, islemTutarFormati, getTarihAraligiDegerleri
+  aralikIcindeMi, islemTipiEtiketi, islemTutarFormati
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
-import { openTarihAraligi } from './tarihAraligi.js';
+import { openAyOzet } from './ayOzet.js';
 
-// ─── Etiket haritası ──────────────────────────────────────────
+const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+               'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
-const ARALIK_ETIKETI = {
-  bugun:   'Bugün',
-  buHafta: 'Bu Hafta',
-  buAy:    'Bu Ay',
-  gecenAy: 'Geçen Ay',
-  buYil:   'Bu Yıl',
-  ozel:    'Aralık',
-};
+// ─── Ay navigasyon yardımcıları ───────────────────────────────
 
-function aralikEtiketi(tip) {
-  return ARALIK_ETIKETI[tip] || 'Aralık';
+function oncekiAy(baslangic) {
+  const [y, m] = baslangic.split('-').map(Number);
+  const pm = m === 1 ? 12 : m - 1;
+  const py = m === 1 ? y - 1 : y;
+  const last = new Date(py, pm, 0);
+  return {
+    tip: 'ozel',
+    baslangic: `${py}-${String(pm).padStart(2, '0')}-01`,
+    bitis:     `${py}-${String(pm).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`
+  };
+}
+
+function sonrakiAy(baslangic) {
+  const [y, m] = baslangic.split('-').map(Number);
+  const nm = m === 12 ? 1 : m + 1;
+  const ny = m === 12 ? y + 1 : y;
+  const last = new Date(ny, nm, 0);
+  return {
+    tip: 'ozel',
+    baslangic: `${ny}-${String(nm).padStart(2, '0')}-01`,
+    bitis:     `${ny}-${String(nm).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`
+  };
 }
 
 // ─── Metrik hesaplama ─────────────────────────────────────────
 
 function calcMetrics(islemler, baslangic, bitis) {
-  const aralikIslemler = islemler.filter(i =>
+  const aralik = islemler.filter(i =>
     i.tarih && aralikIcindeMi(i.tarih, baslangic, bitis) &&
     i.kasaId && i.cariEtkisi !== 'borc_yaz' && i.cariEtkisi !== 'borc_cikar'
   );
-  const ayGelir = aralikIslemler.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
-  const ayGider = aralikIslemler.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
-  return { ayGelir, ayGider, ayNet: ayGelir - ayGider };
+  const gelir = aralik.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
+  const gider = aralik.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
+  return { gelir, gider, net: gelir - gider };
 }
 
 function metricCard(label, value, cls) {
@@ -57,81 +69,6 @@ function kasalarList(kasalar, islemler) {
         <span style="font-size:14px;font-weight:700;color:${bakiye >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatTL(bakiye)}</span>
       </div>`;
   }).join('');
-}
-
-// ─── Aralık Bölümü (eskiden bugunSection) ────────────────────
-
-function aralikSection(islemler, kasalar, aralik) {
-  const { tip, baslangic, bitis } = aralik;
-  const nakitKasa = kasaTipiBul(kasalar, 'nakit');
-  const kartKasa  = kasaTipiBul(kasalar, 'kart', 'kredi');
-
-  const nakitGelir = nakitKasa != null ? kasaAralikGelir(nakitKasa.id, baslangic, bitis, islemler) : null;
-  const kartGelir  = kartKasa  != null ? kasaAralikGelir(kartKasa.id,  baslangic, bitis, islemler) : null;
-  const { gelir: toplamGelir, gider: toplamGider } = aralikNetGelirGider(baslangic, bitis, islemler);
-
-  const nakitLabel = nakitKasa ? `${nakitKasa.emoji} ${nakitKasa.ad}` : '💵 Nakit';
-  const kartLabel  = kartKasa  ? `${kartKasa.emoji} ${kartKasa.ad}`   : '💳 Kart';
-
-  const baslik    = aralikEtiketi(tip);
-  const altBaslik = tip === 'bugun' ? formatTarihUzun(bugun()) : aralikBasligi(baslangic, bitis, tip);
-
-  function gelirKartHtml(label, value) {
-    const bulunamadi = value === null;
-    return `<div class="bugun-kart bugun-kart-gelir${bulunamadi ? ' bugun-kart-absent' : ''}">
-      <div class="bugun-kart-label">${label}</div>
-      <div class="bugun-kart-tutar" style="color:${bulunamadi ? 'var(--text-secondary)' : 'var(--success)'}">
-        ${bulunamadi ? '—' : (value > 0 ? '+' : '') + formatTL(value)}
-      </div>
-    </div>`;
-  }
-
-  const giderRows = kasalar.map(k => {
-    const g = kasaAralikGider(k.id, baslangic, bitis, islemler);
-    if (!g) return '';
-    return `<div class="bugun-diger-item">
-      <span>${k.emoji} ${k.ad}</span>
-      <span style="color:var(--danger);font-weight:600">-${formatTL(g)}</span>
-    </div>`;
-  }).filter(Boolean).join('');
-
-  const giderColor = toplamGider > 0 ? 'var(--danger)' : 'var(--text-secondary)';
-  const giderText  = toplamGider > 0 ? '-' + formatTL(toplamGider) : '0,00 TL';
-
-  return `
-    <div class="section-header">
-      <span class="section-title">${baslik}</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:var(--text-secondary)">${altBaslik}</span>
-        <button class="btn btn-secondary btn-sm" id="dashAralikBtn" style="font-size:11px;padding:4px 8px">📅</button>
-      </div>
-    </div>
-
-    <div class="bugun-gelir-grid">
-      ${gelirKartHtml(nakitLabel, nakitGelir)}
-      ${gelirKartHtml(kartLabel,  kartGelir)}
-      <div class="bugun-kart bugun-kart-gelir bugun-kart-vurgulu">
-        <div class="bugun-kart-label">📊 Toplam Gelir</div>
-        <div class="bugun-kart-tutar" style="color:var(--success)">
-          ${toplamGelir > 0 ? '+' : ''}${formatTL(toplamGelir)}
-        </div>
-      </div>
-    </div>
-
-    <div class="bugun-gider-kart">
-      <div class="bugun-gider-header" id="bugun-gider-toggle">
-        <div>
-          <div class="bugun-kart-label">💸 Toplam Gider</div>
-          <div class="bugun-kart-tutar" style="color:${giderColor}">${giderText}</div>
-        </div>
-        ${giderRows ? `<span class="bugun-gider-toggle-btn">▼ Detay</span>` : ''}
-      </div>
-      ${giderRows ? `
-        <div class="bugun-gider-detay" id="bugun-gider-detay" style="display:none">
-          ${giderRows}
-        </div>
-      ` : ''}
-    </div>`;
 }
 
 // ─── Bugün öde kartı ──────────────────────────────────────────
@@ -166,7 +103,7 @@ function bugunOdeKarti(vadeler, cariler, today) {
 
 // ─── Yaklaşan ödemeler ────────────────────────────────────────
 
-function yaklaşanOdemelerCard(cariler, islemler, vadeler, today) {
+function yaklaşanOdemelerCard(cariler, vadeler, today) {
   const yaklaşanlar = vadeler
     .filter(v => v.vadeTarih && (v.durum === 'bekliyor' || !v.durum))
     .map(v => {
@@ -213,7 +150,7 @@ function recentList(islemler, kasalar, kategoriler, cariler, baslangic, bitis) {
     .slice(0, 5);
 
   if (!son5.length) {
-    return '<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Bu aralıkta işlem yok</p>';
+    return '<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:12px 0">Bu dönemde işlem yok</p>';
   }
   return son5.map(islem => {
     const kasa     = kasalar.find(k => k.id === islem.kasaId);
@@ -279,30 +216,31 @@ export default {
     const aralik      = getTarihAraligi();
     const today       = bugun();
 
-    const { tip, baslangic, bitis } = aralik;
-    const { ayGelir, ayGider, ayNet } = calcMetrics(islemler, baslangic, bitis);
-    const toplamBakiye = kasalar.reduce((sum, k) => sum + hesaplaKasaBakiyesi(k.id, islemler), 0);
-    const etiket       = aralikEtiketi(tip);
+    const { baslangic, bitis } = aralik;
+    const [y, m]    = baslangic.split('-').map(Number);
+    const ayAdi     = AYLAR[m - 1];
+    const monthTitle = `${ayAdi} ${y}`;
 
-    const infoCubugu = tip !== 'buAy' ? `
-      <div class="aralik-info-cubugu">
-        <span>📅 ${aralikBasligi(baslangic, bitis, tip)}</span>
-        <button class="aralik-sifirla-btn" id="dashAralikSifirla" title="Bu Aya dön">×</button>
-      </div>` : '';
+    const { gelir: ayGelir, gider: ayGider, net: ayNet } = calcMetrics(islemler, baslangic, bitis);
+    const toplamBakiye = kasalar.reduce((sum, k) => sum + hesaplaKasaBakiyesi(k.id, islemler), 0);
 
     return `
-      ${infoCubugu}
+      <div class="month-selector">
+        <button id="dashAyGeri">&#8249;</button>
+        <button class="month-display-btn" id="dashAyBaslik">${monthTitle}</button>
+        <button id="dashAySonraki">&#8250;</button>
+      </div>
+
+      <div class="metrics-grid">
+        ${metricCard(`${ayAdi} Gelir`,  ayGelir,      'success')}
+        ${metricCard(`${ayAdi} Gider`,  ayGider,      'danger')}
+        ${metricCard(`${ayAdi} Net`,    ayNet,        ayNet        >= 0 ? 'success' : 'danger')}
+        ${metricCard('Kasalar Bakiye', toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger')}
+      </div>
 
       ${bugunOdeKarti(vadeler, cariler, today)}
 
-      <div class="metrics-grid">
-        ${metricCard(`${etiket} Gelir`,  ayGelir,      'success')}
-        ${metricCard(`${etiket} Gider`,  ayGider,      'danger')}
-        ${metricCard(`${etiket} Net`,    ayNet,        ayNet        >= 0 ? 'success' : 'danger')}
-        ${metricCard('Kasalar Bakiye',   toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger')}
-      </div>
-
-      ${aralikSection(islemler, kasalar, aralik)}
+      ${yaklaşanOdemelerCard(cariler, vadeler, today)}
 
       ${kasalar.length ? `
         <div class="section-header">
@@ -313,8 +251,6 @@ export default {
           ${kasalarList(kasalar, islemler)}
         </div>
       ` : ''}
-
-      ${yaklaşanOdemelerCard(cariler, islemler, vadeler, today)}
 
       <div class="section-header">
         <span class="section-title">Son İşlemler</span>
@@ -334,6 +270,18 @@ export default {
   },
 
   afterRender() {
+    const aralik = getTarihAraligi();
+
+    document.getElementById('dashAyGeri')?.addEventListener('click', () => {
+      setTarihAraligi(oncekiAy(getTarihAraligi().baslangic));
+    });
+
+    document.getElementById('dashAySonraki')?.addEventListener('click', () => {
+      setTarihAraligi(sonrakiAy(getTarihAraligi().baslangic));
+    });
+
+    document.getElementById('dashAyBaslik')?.addEventListener('click', () => openAyOzet());
+
     document.getElementById('dashIslemBtn')?.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -359,28 +307,10 @@ export default {
 
     document.querySelectorAll('.dash-bugun-ode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const cariId = btn.dataset.cariId;
-        const vadeId = btn.dataset.vadeId;
-        const cari   = getCariler().find(c => c.id === cariId);
-        const vade   = getVadeler().find(v => v.id === vadeId);
+        const cari = getCariler().find(c => c.id === btn.dataset.cariId);
+        const vade = getVadeler().find(v => v.id === btn.dataset.vadeId);
         if (cari && vade) openOdemeFormu(cari, vade);
       });
-    });
-
-    document.getElementById('dashAralikBtn')?.addEventListener('click', () => openTarihAraligi());
-
-    document.getElementById('dashAralikSifirla')?.addEventListener('click', () => {
-      const def = getTarihAraligiDegerleri('buAy');
-      setTarihAraligi({ tip: 'buAy', ...def });
-    });
-
-    document.getElementById('bugun-gider-toggle')?.addEventListener('click', () => {
-      const detay = document.getElementById('bugun-gider-detay');
-      const btn   = document.querySelector('.bugun-gider-toggle-btn');
-      if (!detay) return;
-      const open = detay.style.display !== 'none';
-      detay.style.display = open ? 'none' : 'block';
-      if (btn) btn.textContent = open ? '▼ Detay' : '▲ Kapat';
     });
   }
 };

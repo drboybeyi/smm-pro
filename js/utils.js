@@ -396,3 +396,20 @@ export function gunKasaOzeti(gunTarih, kasalar, islemler) {
     return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
   }).filter(item => item.gelir > 0 || item.gider > 0);
 }
+
+export function ayKasaOzeti(islemler, kasalar, baslangic, bitis) {
+  const aralikIslemler = islemler.filter(i =>
+    aralikIcindeMi(i.tarih, baslangic, bitis) && islemKasaHarekedinSayilirMi(i)
+  );
+  return kasalar.map(k => {
+    const gelir = aralikIslemler
+      .filter(i => (i.tip === 'gelir' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.hedefKasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    const gider = aralikIslemler
+      .filter(i => (i.tip === 'gider' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.kasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
+  }).filter(item => item.gelir > 0 || item.gider > 0);
+}
