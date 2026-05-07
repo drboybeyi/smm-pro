@@ -414,6 +414,59 @@ export function ayKasaOzeti(islemler, kasalar, baslangic, bitis) {
   }).filter(item => item.gelir > 0 || item.gider > 0);
 }
 
+// ─── Cari Borç Yardımcıları ───────────────────────────────────
+
+export function tedarikciBorclari(cariler, islemler) {
+  return cariler
+    .filter(c => c.tip === 'tedarikci' && !c.silindi)
+    .map(c => ({ ...c, bakiye: hesaplaCariBakiye(c.id, islemler) }))
+    .filter(c => c.bakiye < 0);
+}
+
+export function cariEnYakinVade(cariId, vadeler, cari) {
+  const bugunStr = bugun();
+
+  // Önce vadeler[]'den bekleyen en yakın
+  const bekleyenler = vadeler
+    .filter(v => v.cariId === cariId && v.durum === 'bekliyor' && v.vadeTarih)
+    .sort((a, b) => a.vadeTarih.localeCompare(b.vadeTarih));
+
+  if (bekleyenler.length > 0) {
+    const enYakin = bekleyenler[0];
+    return {
+      vadeTarih: enYakin.vadeTarih,
+      gunFark:   gunFarki(enYakin.vadeTarih, bugunStr),
+      kaynak:    'vade'
+    };
+  }
+
+  // Sonra cari.vadeTipi'ne bak
+  if (cari?.vadeTipi && cari.vadeTipi !== 'yok') {
+    const vadeDate = hesaplaSonrakiVade(cari, bugunStr);
+    if (vadeDate) {
+      const fmt = dt =>
+        `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const vadeTarihStr = fmt(vadeDate);
+      return {
+        vadeTarih: vadeTarihStr,
+        gunFark:   gunFarki(vadeTarihStr, bugunStr),
+        kaynak:    'cari'
+      };
+    }
+  }
+
+  return null;
+}
+
+export function borcSiraOnceligi(gunFark) {
+  if (gunFark === null || gunFark === undefined) return 9999;
+  if (gunFark < 0)  return gunFark;   // gecikmiş: negatif → en üstte
+  if (gunFark <= 30) return gunFark;  // bugün=0 ... 30 gün
+  return 999;                         // 30+ gün hepsi aynı
+}
+
+// ─── Tüm Zamanlar Özeti ───────────────────────────────────────
+
 export function tumZamanlarOzet(islemler, kasalar, kategoriler) {
   const sayilanlar = islemler.filter(islemKasaHarekedinSayilirMi);
   if (!sayilanlar.length) return null;
