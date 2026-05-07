@@ -1,7 +1,8 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getTarihAraligi, setTarihAraligi } from '../state.js';
 import {
   formatTL, formatTarih, bugun, gunFarki,
-  aralikIcindeMi, islemTipiEtiketi, islemTutarFormati
+  aralikIcindeMi, islemTipiEtiketi, islemTutarFormati,
+  islemKasaHarekedinSayilirMi
 } from '../utils.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
@@ -98,6 +99,30 @@ function bugunOdeKarti(vadeler, cariler, today) {
     <div class="dash-bugun-ode-kart">
       <div class="dash-bugun-ode-baslik">🚨 BUGÜN ÖDEMELERİNİZ</div>
       ${rows}
+    </div>`;
+}
+
+// ─── Bugünün gideri ───────────────────────────────────────────
+
+function bugunGiderKarti(islemler, today) {
+  const bugunGiderler = islemler.filter(i =>
+    i.tarih === today && islemKasaHarekedinSayilirMi(i) && i.tip === 'gider'
+  );
+  const toplam = bugunGiderler.reduce((s, i) => s + (i.tutar || 0), 0);
+  const sayi   = bugunGiderler.length;
+
+  if (!sayi) {
+    return `
+      <div class="bugun-gider-kart">
+        <div class="bugun-gider-baslik">💸 Bugünün Gideri</div>
+        <div class="bugun-gider-yok">Bugün gider yok</div>
+      </div>`;
+  }
+  return `
+    <div class="bugun-gider-kart bugun-gider-kart-aktif" id="dashBugunGiderKart" style="cursor:pointer">
+      <div class="bugun-gider-baslik">💸 Bugünün Gideri</div>
+      <div class="bugun-gider-tutar">${formatTL(toplam)}</div>
+      <div class="bugun-gider-alt">${sayi} işlem</div>
     </div>`;
 }
 
@@ -242,6 +267,8 @@ export default {
 
       ${yaklaşanOdemelerCard(cariler, vadeler, today)}
 
+      ${bugunGiderKarti(islemler, today)}
+
       ${kasalar.length ? `
         <div class="section-header">
           <span class="section-title">Kasalar</span>
@@ -281,6 +308,10 @@ export default {
     });
 
     document.getElementById('dashAyBaslik')?.addEventListener('click', () => openAyOzet());
+
+    document.getElementById('dashBugunGiderKart')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('defter:open-takvim'));
+    });
 
     document.getElementById('dashIslemBtn')?.addEventListener('click', e => {
       e.preventDefault();

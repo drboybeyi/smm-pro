@@ -189,6 +189,10 @@ document.addEventListener('defter:islem-updated', () => {
   showToast('İşlem güncellendi', 'success');
 });
 
+document.addEventListener('defter:open-takvim', () => {
+  openTakvim();
+});
+
 document.addEventListener('defter:open-cariler', () => {
   openCariler();
 });

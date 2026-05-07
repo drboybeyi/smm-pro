@@ -1,5 +1,5 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
-import { formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti } from '../utils.js';
+import { formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti, islemKasaHarekedinSayilirMi } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -31,6 +31,14 @@ export function openTakvim() {
                      i.cariEtkisi !== 'borc_cikar')
         .map(i => i.tarih)
     );
+
+    // Gün bazlı gelir toplamları
+    const dayGelirMap = {};
+    islemler
+      .filter(i => i.tarih?.startsWith(ayPrefix) && islemKasaHarekedinSayilirMi(i) && i.tip === 'gelir')
+      .forEach(i => {
+        dayGelirMap[i.tarih] = (dayGelirMap[i.tarih] || 0) + (i.tutar || 0);
+      });
 
     // Vade map
     const vadeByGun = {};
@@ -65,6 +73,7 @@ export function openTakvim() {
       const hasVade    = gunVadeler.length > 0;
       const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
       const hasData    = daysWithIslemler.has(dateStr);
+      const dayGelir   = dayGelirMap[dateStr] || 0;
 
       let vadeHtml = '';
       if (hasVade) {
@@ -72,10 +81,15 @@ export function openTakvim() {
         vadeHtml = `<span class="cal-vade-tutar" style="color:${vRenk}">💸${kisaltilmisRakam(vadeToplam)}</span>`;
       }
 
+      const gelirHtml = dayGelir > 0
+        ? `<span class="cal-gun-gelir">+${kisaltilmisRakam(dayGelir)}</span>`
+        : '';
+
       cells += `
         <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
+          ${gelirHtml}
           ${vadeHtml}
         </div>`;
     }

@@ -413,3 +413,66 @@ export function ayKasaOzeti(islemler, kasalar, baslangic, bitis) {
     return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
   }).filter(item => item.gelir > 0 || item.gider > 0);
 }
+
+export function tumZamanlarOzet(islemler, kasalar, kategoriler) {
+  const sayilanlar = islemler.filter(islemKasaHarekedinSayilirMi);
+  if (!sayilanlar.length) return null;
+
+  const tarihler = sayilanlar.map(i => i.tarih).filter(Boolean).sort();
+  const ilkTarih = tarihler[0];
+  const sonTarih = tarihler[tarihler.length - 1];
+  const sureDays = gunFarki(sonTarih, ilkTarih) + 1;
+
+  const toplamGelir = sayilanlar.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
+  const toplamGider = sayilanlar.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
+
+  const aySet = new Set(sayilanlar.map(i => i.tarih?.slice(0, 7)).filter(Boolean));
+  const ayCount = aySet.size || 1;
+
+  const kasaOzet = kasalar.map(k => {
+    const gelir = sayilanlar
+      .filter(i => (i.tip === 'gelir' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.hedefKasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    const gider = sayilanlar
+      .filter(i => (i.tip === 'gider' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.kasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
+  }).filter(item => item.gelir > 0 || item.gider > 0);
+
+  const aylikMap = {};
+  sayilanlar.forEach(i => {
+    const ay = i.tarih?.slice(0, 7);
+    if (!ay) return;
+    if (!aylikMap[ay]) aylikMap[ay] = { gelir: 0, gider: 0 };
+    if (i.tip === 'gelir') aylikMap[ay].gelir += (i.tutar || 0);
+    if (i.tip === 'gider') aylikMap[ay].gider += (i.tutar || 0);
+  });
+  const aylikSatirlar = Object.entries(aylikMap)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([ay, { gelir, gider }]) => ({ ay, gelir, gider, net: gelir - gider }));
+
+  const gelirKatMap = {};
+  const giderKatMap = {};
+  sayilanlar.forEach(i => {
+    if (!i.kategoriId) return;
+    if (i.tip === 'gelir') gelirKatMap[i.kategoriId] = (gelirKatMap[i.kategoriId] || 0) + (i.tutar || 0);
+    if (i.tip === 'gider') giderKatMap[i.kategoriId] = (giderKatMap[i.kategoriId] || 0) + (i.tutar || 0);
+  });
+  const mapToKat = katMap => Object.entries(katMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([katId, toplam]) => ({ kat: kategoriler.find(k => k.id === katId), toplam }))
+    .filter(x => x.kat);
+
+  return {
+    ilkTarih, sonTarih, sureDays, ayCount,
+    toplamGelir, toplamGider, toplamNet: toplamGelir - toplamGider,
+    ayOrtalGelir: toplamGelir / ayCount,
+    ayOrtalGider: toplamGider / ayCount,
+    kasaOzet, aylikSatirlar,
+    topGelirKat: mapToKat(gelirKatMap),
+    topGiderKat: mapToKat(giderKatMap)
+  };
+}
