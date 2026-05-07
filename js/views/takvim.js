@@ -1,46 +1,230 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
-import { formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti, islemKasaHarekedinSayilirMi } from '../utils.js';
+import {
+  formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti,
+  islemKasaHarekedinSayilirMi
+} from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
+import { openAyOzet } from './ayOzet.js';
+
+const MONTHS      = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+                     'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const DAY_HEADERS = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+
+let viewYear  = new Date().getFullYear();
+let viewMonth = new Date().getMonth();
 
 export function openTakvim() {
-  if (document.getElementById('takvim-overlay')) return;
+  location.hash = '#takvim';
+}
 
-  const now = new Date();
-  let viewYear  = now.getFullYear();
-  let viewMonth = now.getMonth();
+// ─── Grid ─────────────────────────────────────────────────────
 
-  const overlay = document.createElement('div');
-  overlay.id = 'takvim-overlay';
-  overlay.className = 'modal-overlay';
-  document.body.appendChild(overlay);
+function buildGrid(islemler, vadeler) {
+  const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+  const todayStr = new Date().toISOString().slice(0, 10);
 
-  function render() {
+  const vadeByGun = {};
+  vadeler
+    .filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix))
+    .forEach(v => {
+      if (!vadeByGun[v.vadeTarih]) vadeByGun[v.vadeTarih] = [];
+      vadeByGun[v.vadeTarih].push(v);
+    });
+
+  const daysWithIslemler = new Set(
+    islemler
+      .filter(i => i.tarih?.startsWith(ayPrefix) &&
+                   i.cariEtkisi !== 'borc_yaz' &&
+                   i.cariEtkisi !== 'borc_cikar')
+      .map(i => i.tarih)
+  );
+
+  const dayGelirMap = {};
+  islemler
+    .filter(i => i.tarih?.startsWith(ayPrefix) && islemKasaHarekedinSayilirMi(i) && i.tip === 'gelir')
+    .forEach(i => {
+      dayGelirMap[i.tarih] = (dayGelirMap[i.tarih] || 0) + (i.tutar || 0);
+    });
+
+  const firstDay    = new Date(viewYear, viewMonth, 1);
+  let startDow      = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const prevY            = viewMonth === 0 ? viewYear - 1 : viewYear;
+  const prevM            = viewMonth === 0 ? 11 : viewMonth - 1;
+  const prevMonthLastDay = new Date(prevY, prevM + 1, 0).getDate();
+  const nextY            = viewMonth === 11 ? viewYear + 1 : viewYear;
+  const nextM            = viewMonth === 11 ? 0 : viewMonth + 1;
+
+  let cells = '';
+
+  // Previous month overflow (greyed)
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d       = prevMonthLastDay - i;
+    const dateStr = `${prevY}-${String(prevM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells += `<div class="cal-cell cal-cell-other-month" data-date="${dateStr}" data-other-month="prev">
+      <span class="cal-day-num">${d}</span>
+    </div>`;
+  }
+
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr    = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday    = dateStr === todayStr;
+    const gunVadeler = vadeByGun[dateStr] || [];
+    const hasVade    = gunVadeler.length > 0;
+    const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
+    const hasData    = daysWithIslemler.has(dateStr);
+    const dayGelir   = dayGelirMap[dateStr] || 0;
+
+    const gelirHtml = dayGelir > 0
+      ? `<span class="cal-gun-gelir">+${kisaltilmisRakam(dayGelir)}</span>`
+      : '';
+
+    let vadeHtml = '';
+    if (hasVade) {
+      const vRenk = isToday ? '#b83030' : 'var(--warning)';
+      vadeHtml = `<span class="cal-vade-tutar" style="color:${vRenk}">💸${kisaltilmisRakam(vadeToplam)}</span>`;
+    }
+
+    cells += `
+      <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
+           data-date="${dateStr}">
+        <span class="cal-day-num">${d}</span>
+        ${gelirHtml}
+        ${vadeHtml}
+      </div>`;
+  }
+
+  // Next month overflow
+  const totalCells = startDow + daysInMonth;
+  const remainder  = totalCells % 7;
+  if (remainder !== 0) {
+    const extraDays = 7 - remainder;
+    for (let d = 1; d <= extraDays; d++) {
+      const dateStr = `${nextY}-${String(nextM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      cells += `<div class="cal-cell cal-cell-other-month" data-date="${dateStr}" data-other-month="next">
+        <span class="cal-day-num">${d}</span>
+      </div>`;
+    }
+  }
+
+  return cells;
+}
+
+// ─── Mini Özet Bar ────────────────────────────────────────────
+
+function buildMiniOzet(islemler, vadeler) {
+  const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+  const ayIslem  = islemler.filter(i => i.tarih?.startsWith(ayPrefix) && islemKasaHarekedinSayilirMi(i));
+  const gelir    = ayIslem.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
+  const gider    = ayIslem.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
+  const net      = gelir - gider;
+  const vadeSay  = vadeler.filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix)).length;
+
+  const netRenk = net >= 0 ? 'var(--success)' : 'var(--danger)';
+  const netStr  = (net >= 0 ? '+' : '') + formatTL(net);
+
+  return `
+    <div class="takvim-mini-ozet" id="takvimMiniOzet">
+      <span style="color:${netRenk};font-weight:700">📊 Bu Ay: ${netStr}</span>
+      ${vadeSay > 0 ? `<span class="takvim-mini-vade"> · ⚠️ ${vadeSay} vade</span>` : ''}
+    </div>`;
+}
+
+// ─── Yıl Bar ──────────────────────────────────────────────────
+
+function buildYilBar(islemler) {
+  const yilSet = new Set(islemler.map(i => i.tarih?.slice(0, 4)).filter(Boolean));
+  yilSet.add(String(new Date().getFullYear()));
+  const yillar = Array.from(yilSet).sort();
+  if (yillar.length <= 1) return '';
+
+  return `
+    <div class="takvim-yil-bar">
+      📅 ${yillar.map(y =>
+        `<button class="takvim-yil-btn${Number(y) === viewYear ? ' aktif' : ''}" data-yil="${y}">${y}</button>`
+      ).join('')}
+    </div>`;
+}
+
+// ─── Page View Export ─────────────────────────────────────────
+
+export default {
+  render() {
+    const islemler = getIslemler();
+    const vadeler  = getVadeler();
+    const now      = new Date();
+    const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
+    return `
+      <div class="takvim-page">
+        <div class="takvim-page-header">
+          <button class="takvim-nav-btn" id="takvimPagePrev">‹</button>
+          <button class="takvim-ay-baslik" id="takvimPageAyBaslik">${MONTHS[viewMonth]} ${viewYear}</button>
+          <button class="takvim-nav-btn" id="takvimPageNext">›</button>
+          ${!isCurrentMonth
+            ? `<button class="takvim-bugun-btn" id="takvimPageBugun">📍 Bugün</button>`
+            : ''}
+        </div>
+        ${buildMiniOzet(islemler, vadeler)}
+        <div class="cal-grid takvim-page-grid">
+          ${DAY_HEADERS.map((h, i) =>
+            `<div class="cal-header-cell${i >= 5 ? ' cal-header-weekend' : ''}">${h}</div>`
+          ).join('')}
+          ${buildGrid(islemler, vadeler)}
+        </div>
+        ${buildYilBar(islemler)}
+      </div>`;
+  },
+
+  afterRender() {
+    const appEl = document.getElementById('app');
+
+    const rerender = () => {
+      appEl.innerHTML = this.render();
+      this.afterRender();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+
+    document.getElementById('takvimPagePrev')?.addEventListener('click', () => {
+      viewMonth--;
+      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      rerender();
+    });
+
+    document.getElementById('takvimPageNext')?.addEventListener('click', () => {
+      viewMonth++;
+      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      rerender();
+    });
+
+    document.getElementById('takvimPageBugun')?.addEventListener('click', () => {
+      const n  = new Date();
+      viewYear  = n.getFullYear();
+      viewMonth = n.getMonth();
+      rerender();
+    });
+
+    document.getElementById('takvimPageAyBaslik')?.addEventListener('click', () => openAyOzet());
+    document.getElementById('takvimMiniOzet')?.addEventListener('click', () => openAyOzet());
+
+    document.querySelectorAll('.takvim-yil-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        viewYear = Number(btn.dataset.yil);
+        rerender();
+      });
+    });
+
+    // Cell click handlers
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
     const cariler     = getCariler();
     const vadeler     = getVadeler();
+    const ayPrefix    = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
 
-    const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
-
-    // Hangi günlerde işlem var (sadece tıklanabilir hücre tespiti için)
-    const daysWithIslemler = new Set(
-      islemler
-        .filter(i => i.tarih?.startsWith(ayPrefix) &&
-                     i.cariEtkisi !== 'borc_yaz' &&
-                     i.cariEtkisi !== 'borc_cikar')
-        .map(i => i.tarih)
-    );
-
-    // Gün bazlı gelir toplamları
-    const dayGelirMap = {};
-    islemler
-      .filter(i => i.tarih?.startsWith(ayPrefix) && islemKasaHarekedinSayilirMi(i) && i.tip === 'gelir')
-      .forEach(i => {
-        dayGelirMap[i.tarih] = (dayGelirMap[i.tarih] || 0) + (i.tutar || 0);
-      });
-
-    // Vade map
     const vadeByGun = {};
     vadeler
       .filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix))
@@ -49,85 +233,18 @@ export function openTakvim() {
         vadeByGun[v.vadeTarih].push(v);
       });
 
-    const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
-                    'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-    const monthTitle  = `${MONTHS[viewMonth]} ${viewYear}`;
-    const DAY_HEADERS = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
-
-    const firstDay = new Date(viewYear, viewMonth, 1);
-    let startDow = firstDay.getDay() - 1;
-    if (startDow < 0) startDow = 6;
-
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const todayStr    = new Date().toISOString().slice(0, 10);
-
-    let cells = '';
-    for (let i = 0; i < startDow; i++) {
-      cells += `<div class="cal-cell cal-cell-empty"></div>`;
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr    = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const isToday    = dateStr === todayStr;
-      const gunVadeler = vadeByGun[dateStr] || [];
-      const hasVade    = gunVadeler.length > 0;
-      const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
-      const hasData    = daysWithIslemler.has(dateStr);
-      const dayGelir   = dayGelirMap[dateStr] || 0;
-
-      let vadeHtml = '';
-      if (hasVade) {
-        const vRenk = isToday ? '#b83030' : 'var(--warning)';
-        vadeHtml = `<span class="cal-vade-tutar" style="color:${vRenk}">💸${kisaltilmisRakam(vadeToplam)}</span>`;
-      }
-
-      const gelirHtml = dayGelir > 0
-        ? `<span class="cal-gun-gelir">+${kisaltilmisRakam(dayGelir)}</span>`
-        : '';
-
-      cells += `
-        <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
-             data-date="${dateStr}">
-          <span class="cal-day-num">${d}</span>
-          ${gelirHtml}
-          ${vadeHtml}
-        </div>`;
-    }
-
-    overlay.innerHTML = `
-      <div class="modal-box takvim-box">
-        <div class="modal-header">
-          <span class="modal-title">Takvim</span>
-          <button class="modal-close" id="takvim-close">✕</button>
-        </div>
-        <div class="takvim-nav">
-          <button class="btn btn-secondary btn-sm" id="takvim-prev">‹ Önceki</button>
-          <span class="takvim-month-title">${monthTitle}</span>
-          <button class="btn btn-secondary btn-sm" id="takvim-next">Sonraki ›</button>
-        </div>
-        <div class="cal-grid">
-          ${DAY_HEADERS.map(h => `<div class="cal-header-cell">${h}</div>`).join('')}
-          ${cells}
-        </div>
-      </div>`;
-
-    document.getElementById('takvim-close')?.addEventListener('click', close);
-
-    document.getElementById('takvim-prev')?.addEventListener('click', () => {
-      viewMonth--;
-      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-      render();
-    });
-
-    document.getElementById('takvim-next')?.addEventListener('click', () => {
-      viewMonth++;
-      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-      render();
-    });
-
-    overlay.querySelectorAll('.cal-cell[data-date]').forEach(cell => {
+    document.querySelectorAll('.cal-cell[data-date]').forEach(cell => {
       cell.addEventListener('click', () => {
-        const dateStr     = cell.dataset.date;
+        const dateStr = cell.dataset.date;
+
+        if (cell.dataset.otherMonth) {
+          const [y, m] = dateStr.split('-').map(Number);
+          viewYear  = y;
+          viewMonth = m - 1;
+          rerender();
+          return;
+        }
+
         const gunIslemler = islemler.filter(i =>
           i.tarih === dateStr &&
           i.cariEtkisi !== 'borc_yaz' &&
@@ -140,16 +257,9 @@ export function openTakvim() {
       });
     });
   }
+};
 
-  function close() {
-    overlay.classList.add('modal-closing');
-    setTimeout(() => overlay.remove(), 220);
-  }
-
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-  render();
-}
+// ─── Gün Detay Modal ──────────────────────────────────────────
 
 function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, cariler, tumIslemler) {
   if (document.getElementById('gun-detay-modal')) return;
@@ -187,7 +297,6 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, caril
     </div>
     <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">` : '';
 
-  // Kasa hareketleri
   const kasaOzeti = gunKasaOzeti(dateStr, kasalar, tumIslemler);
   const kasaHtml = kasaOzeti.length ? `
     <div class="gun-kasa-section">

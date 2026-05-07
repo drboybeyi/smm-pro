@@ -2542,3 +2542,168 @@ select.form-control {
   line-height: 1.2;
   margin-top: 1px;
 }
+
+/* ─── Faz 4.11: Takvim Tam Ekran Sayfa ──────────────────────── */
+
+.takvim-page {
+  padding: 0;
+}
+
+.takvim-page-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  position: sticky;
+  top: var(--header-h);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.takvim-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 1;
+  padding: 3px 12px 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.takvim-nav-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.takvim-ay-baslik {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.takvim-ay-baslik:hover {
+  color: var(--accent);
+}
+
+.takvim-bugun-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.takvim-mini-ozet {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.takvim-mini-ozet:hover {
+  background: var(--border);
+}
+
+.takvim-mini-vade {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.takvim-page-grid {
+  padding: 6px 4px;
+}
+
+.cal-cell-other-month {
+  opacity: 0.3;
+}
+
+.cal-header-weekend {
+  color: var(--text-secondary);
+}
+
+.takvim-yil-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px 20px;
+  overflow-x: auto;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.takvim-yil-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.takvim-yil-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.takvim-yil-btn.aktif {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+/* ─── Faz 4.11: Ayarlar Kasalar Yönetimi ────────────────────── */
+
+.ay-kasalar-satir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ay-kasalar-satir:last-child {
+  border-bottom: none;
+}
+
+.ay-kasalar-ad {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ay-kasalar-bakiye {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ay-kasalar-edit {
+  flex-shrink: 0;
+}

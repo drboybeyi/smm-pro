@@ -58,7 +58,7 @@ export default {
   }
 };
 
-function showKasaModal(kasa) {
+export function showKasaModal(kasa) {
   const isEdit = kasa !== null;
   if (document.getElementById('kasa-modal')) return;
 

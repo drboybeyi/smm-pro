@@ -1,13 +1,17 @@
-import { getAyarlar, getKasalar, getKategoriler } from '../state.js';
-import { updateAyarlar } from '../db.js';
+import { getAyarlar, getKasalar, getKategoriler, getIslemler } from '../state.js';
+import { updateAyarlar, hesaplaKasaBakiyesi } from '../db.js';
+import { formatTL } from '../utils.js';
 import { auth, logoutUser } from '../firebase-config.js';
+import { showKasaModal } from './kasalar.js';
 
 export default {
   render() {
     const a           = getAyarlar();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
+    const islemler    = getIslemler();
     const email       = auth.currentUser?.email || '';
+    const toplamBakiye = kasalar.reduce((sum, k) => sum + hesaplaKasaBakiyesi(k.id, islemler), 0);
 
     const gelirKatlar = kategoriler.filter(k => k.tip === 'gelir');
     const giderKatlar = kategoriler.filter(k => k.tip === 'gider');
@@ -52,6 +56,29 @@ export default {
           <span style="font-size:13px;font-weight:600;color:var(--text-primary);word-break:break-all;text-align:right;margin-left:8px">${email}</span>
         </div>
         <button class="btn btn-danger btn-block" id="btnCikis">Çıkış Yap</button>
+      </div>
+
+      <!-- ─── Kasalar Yönetimi ─── -->
+      <div class="card mb-3">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-weight:700;color:var(--accent)">💼 Kasalar</div>
+          <button class="btn btn-primary btn-sm" id="btnAyYeniKasa">+ Yeni Kasa</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">Toplam Bakiye</span>
+          <span style="font-size:16px;font-weight:700;color:${toplamBakiye >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatTL(toplamBakiye)}</span>
+        </div>
+        ${kasalar.length === 0
+          ? `<p style="font-size:13px;color:var(--text-secondary)">Henüz kasa yok.</p>`
+          : kasalar.map(k => {
+              const b = hesaplaKasaBakiyesi(k.id, islemler);
+              return `
+                <div class="ay-kasalar-satir">
+                  <span class="ay-kasalar-ad">${k.emoji} ${k.ad}</span>
+                  <span class="ay-kasalar-bakiye ${b >= 0 ? 'income' : 'expense'}">${formatTL(b)}</span>
+                  <button class="btn btn-secondary btn-sm ay-kasalar-edit" data-kasa-id="${k.id}" style="padding:4px 10px">✎</button>
+                </div>`;
+            }).join('')}
       </div>
 
       <!-- ─── Dashboard Bugün Kartları (Devre Dışı) ─── -->
@@ -132,6 +159,16 @@ export default {
   },
 
   afterRender() {
+    // ─── Kasalar Yönetimi ──────────────────────────────────────
+    document.getElementById('btnAyYeniKasa')?.addEventListener('click', () => showKasaModal(null));
+
+    document.querySelectorAll('.ay-kasalar-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const kasa = getKasalar().find(k => k.id === btn.dataset.kasaId);
+        if (kasa) showKasaModal(kasa);
+      });
+    });
+
     // ─── Profil Kaydet ─────────────────────────────────────────
     document.getElementById('btnAyarlarKaydet')?.addEventListener('click', async () => {
       await updateAyarlar({

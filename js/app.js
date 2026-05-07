@@ -12,21 +12,20 @@ import {
 } from './state.js';
 import { bugun, formatTarih } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
-import { openTakvim } from './views/takvim.js';
+import TakvimView, { openTakvim } from './views/takvim.js';
 import { openCariler } from './views/cariler.js';
 import { openCariDetay } from './views/cariDetay.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
 import Dashboard   from './views/dashboard.js';
 import Islemler    from './views/islemler.js';
-import Kasalar     from './views/kasalar.js';
 import Kategoriler from './views/kategoriler.js';
 import Ayarlar     from './views/ayarlar.js';
 
 const VIEWS = {
   dashboard:   Dashboard,
   islemler:    Islemler,
-  kasalar:     Kasalar,
+  takvim:      TakvimView,
   kategoriler: Kategoriler,
   ayarlar:     Ayarlar
 };
@@ -171,7 +170,7 @@ function showFabSheet() {
   document.getElementById('fab-gider')?.addEventListener('click',    () => { close(); setTimeout(() => openIslemForm('gider'),    220); });
   document.getElementById('fab-transfer')?.addEventListener('click', () => { close(); setTimeout(() => openIslemForm('transfer'), 220); });
   document.getElementById('fab-cari')?.addEventListener('click',     () => { close(); setTimeout(() => openCariler(),             220); });
-  document.getElementById('fab-takvim')?.addEventListener('click',   () => { close(); setTimeout(() => openTakvim(),              220); });
+  document.getElementById('fab-takvim')?.addEventListener('click',   () => { close(); setTimeout(() => { location.hash = '#takvim'; }, 220); });
   document.getElementById('fab-iptal')?.addEventListener('click', close);
 }
 
@@ -190,7 +189,7 @@ document.addEventListener('defter:islem-updated', () => {
 });
 
 document.addEventListener('defter:open-takvim', () => {
-  openTakvim();
+  location.hash = '#takvim';
 });
 
 document.addEventListener('defter:open-cariler', () => {
@@ -231,7 +230,11 @@ if ('serviceWorker' in navigator && location.hostname !== 'localhost' && locatio
 initState();
 setHeaderDate();
 hideAppUI();
-window.addEventListener('hashchange', () => { if (_authenticated) navigate(currentView()); });
+window.addEventListener('hashchange', () => {
+  if (!_authenticated) return;
+  if (location.hash === '#kasalar') { location.hash = '#ayarlar'; return; }
+  navigate(currentView());
+});
 
 onAuthChange(user => {
   if (user && !user.isAnonymous) {

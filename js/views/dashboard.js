@@ -272,7 +272,7 @@ export default {
       ${kasalar.length ? `
         <div class="section-header">
           <span class="section-title">Kasalar</span>
-          <a href="#kasalar" class="btn btn-secondary btn-sm">Tümü →</a>
+          <a href="#ayarlar" class="btn btn-secondary btn-sm">Tümü →</a>
         </div>
         <div class="card mb-3" style="padding:4px 16px">
           ${kasalarList(kasalar, islemler)}
