@@ -200,10 +200,11 @@ document.addEventListener('defter:open-cari-detay', e => {
   if (cari) openCariDetay(cari);
 });
 
-subscribe('islemler',    () => { if (_authenticated) navigate(currentView()); });
-subscribe('kasalar',     () => { if (_authenticated) navigate(currentView()); });
-subscribe('kategoriler', () => { if (_authenticated) navigate(currentView()); });
-subscribe('cariler',     () => { if (_authenticated) navigate(currentView()); });
+subscribe('islemler',     () => { if (_authenticated) navigate(currentView()); });
+subscribe('kasalar',      () => { if (_authenticated) navigate(currentView()); });
+subscribe('kategoriler',  () => { if (_authenticated) navigate(currentView()); });
+subscribe('cariler',      () => { if (_authenticated) navigate(currentView()); });
+subscribe('tarihAraligi', () => { if (_authenticated && currentView() === 'dashboard') navigate('dashboard'); });
 subscribe('vadeler', () => {
   if (_authenticated) {
     navigate(currentView());

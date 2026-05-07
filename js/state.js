@@ -1,12 +1,33 @@
 // ─── State ─────────────────────────────────────────────────────────────────────
 
+const ARALIK_LS_KEY = 'defter-tarih-araligi';
+
+function _defaultAralik() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const baslangic = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const last = new Date(y, m + 1, 0);
+  const bitis = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`;
+  return { tip: 'buAy', baslangic, bitis };
+}
+
+function _loadAralik() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ARALIK_LS_KEY) || 'null');
+    if (saved?.tip && saved?.baslangic && saved?.bitis) return saved;
+  } catch {}
+  return _defaultAralik();
+}
+
 const state = {
-  islemler:    [],
-  kasalar:     [],
-  kategoriler: [],
-  cariler:     [],
-  vadeler:     [],
-  ayarlar:     {}
+  islemler:     [],
+  kasalar:      [],
+  kategoriler:  [],
+  cariler:      [],
+  vadeler:      [],
+  ayarlar:      {},
+  tarihAraligi: _loadAralik()
 };
 
 // ─── PubSub ────────────────────────────────────────────────────────────────────
@@ -25,13 +46,14 @@ function publish(event, data) {
 
 // ─── Getters ───────────────────────────────────────────────────────────────────
 
-export const getState       = () => state;
-export const getIslemler    = () => state.islemler;
-export const getKasalar     = () => state.kasalar;
-export const getKategoriler = () => state.kategoriler;
-export const getCariler     = () => state.cariler;
-export const getVadeler     = () => state.vadeler;
-export const getAyarlar     = () => state.ayarlar;
+export const getState        = () => state;
+export const getIslemler     = () => state.islemler;
+export const getKasalar      = () => state.kasalar;
+export const getKategoriler  = () => state.kategoriler;
+export const getCariler      = () => state.cariler;
+export const getVadeler      = () => state.vadeler;
+export const getAyarlar      = () => state.ayarlar;
+export const getTarihAraligi = () => state.tarihAraligi;
 
 // ─── Setters ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +85,12 @@ export function setVadeler(liste) {
 export function setAyarlar(ayarlar) {
   state.ayarlar = { ...state.ayarlar, ...ayarlar };
   publish('ayarlar', state.ayarlar);
+}
+
+export function setTarihAraligi(aralik) {
+  state.tarihAraligi = aralik;
+  try { localStorage.setItem(ARALIK_LS_KEY, JSON.stringify(aralik)); } catch {}
+  publish('tarihAraligi', state.tarihAraligi);
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────────

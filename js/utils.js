@@ -279,3 +279,120 @@ export function hesaplaSonrakiVade(cari, bugunStr) {
 
   return null;
 }
+
+// ─── Tarih Aralığı Yardımcıları ───────────────────────────────
+
+export function aralikIcindeMi(tarih, baslangic, bitis) {
+  if (!tarih || !baslangic || !bitis) return false;
+  return tarih >= baslangic && tarih <= bitis;
+}
+
+export function getTarihAraligiDegerleri(tip) {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = now.getMonth();
+  const d   = now.getDate();
+
+  const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+
+  if (tip === 'bugun') {
+    const s = bugun();
+    return { baslangic: s, bitis: s };
+  }
+  if (tip === 'buHafta') {
+    const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    const mon = new Date(y, m, d - dow);
+    const sun = new Date(y, m, d - dow + 6);
+    return { baslangic: fmt(mon), bitis: fmt(sun) };
+  }
+  if (tip === 'buAy') {
+    const last = new Date(y, m + 1, 0);
+    return { baslangic: `${y}-${String(m + 1).padStart(2, '0')}-01`, bitis: fmt(last) };
+  }
+  if (tip === 'gecenAy') {
+    const pm   = m === 0 ? 11 : m - 1;
+    const py   = m === 0 ? y - 1 : y;
+    const last = new Date(py, pm + 1, 0);
+    return { baslangic: `${py}-${String(pm + 1).padStart(2, '0')}-01`, bitis: fmt(last) };
+  }
+  if (tip === 'buYil') {
+    return { baslangic: `${y}-01-01`, bitis: `${y}-12-31` };
+  }
+  return null;
+}
+
+export function aralikBasligi(baslangic, bitis, tip) {
+  if (!baslangic || !bitis) return '';
+  const [by, bm, bd] = baslangic.split('-').map(Number);
+  const [ey, em, ed] = bitis.split('-').map(Number);
+  if (tip === 'bugun')   return 'Bugün';
+  if (tip === 'buHafta') {
+    return bm === em
+      ? `Bu Hafta — ${bd}-${ed} ${AYLAR_TR[bm - 1]}`
+      : `Bu Hafta — ${bd} ${AYLAR_TR[bm - 1]}-${ed} ${AYLAR_TR[em - 1]}`;
+  }
+  if (tip === 'buAy')    return `Bu Ay — ${AYLAR_TR[bm - 1]} ${by}`;
+  if (tip === 'gecenAy') return `Geçen Ay — ${AYLAR_TR[bm - 1]} ${by}`;
+  if (tip === 'buYil')   return `Bu Yıl — ${by}`;
+  return `${String(bd).padStart(2, '0')}.${String(bm).padStart(2, '0')}.${by} – ${String(ed).padStart(2, '0')}.${String(em).padStart(2, '0')}.${ey}`;
+}
+
+// ─── Aralık Bazlı Kasa Hesaplamaları ──────────────────────────
+
+export function kasaAralikGelir(kasaId, baslangic, bitis, islemler) {
+  return islemler
+    .filter(i => aralikIcindeMi(i.tarih, baslangic, bitis) && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
+export function kasaAralikGider(kasaId, baslangic, bitis, islemler) {
+  return islemler
+    .filter(i => aralikIcindeMi(i.tarih, baslangic, bitis) && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gider'    && i.kasaId === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'transfer' && i.kasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
+export function kasaAralikNet(kasaId, baslangic, bitis, islemler) {
+  return islemler
+    .filter(i => aralikIcindeMi(i.tarih, baslangic, bitis) && islemKasaHarekedinSayilirMi(i))
+    .reduce((sum, i) => {
+      if (i.tip === 'gelir'    && i.kasaId      === kasaId) return sum + (i.tutar || 0);
+      if (i.tip === 'gider'    && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+      if (i.tip === 'transfer' && i.kasaId      === kasaId) return sum - (i.tutar || 0);
+      if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return sum + (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
+export function aralikNetGelirGider(baslangic, bitis, islemler) {
+  const aralik = islemler.filter(i =>
+    aralikIcindeMi(i.tarih, baslangic, bitis) && islemKasaHarekedinSayilirMi(i)
+  );
+  const gelir = aralik.filter(i => i.tip === 'gelir').reduce((s, i) => s + (i.tutar || 0), 0);
+  const gider = aralik.filter(i => i.tip === 'gider').reduce((s, i) => s + (i.tutar || 0), 0);
+  return { gelir, gider, net: gelir - gider };
+}
+
+export function gunKasaOzeti(gunTarih, kasalar, islemler) {
+  return kasalar.map(k => {
+    const gunIslemleri = islemler.filter(i =>
+      i.tarih === gunTarih && islemKasaHarekedinSayilirMi(i)
+    );
+    const gelir = gunIslemleri
+      .filter(i => (i.tip === 'gelir' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.hedefKasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    const gider = gunIslemleri
+      .filter(i => (i.tip === 'gider' && i.kasaId === k.id) ||
+                   (i.tip === 'transfer' && i.kasaId === k.id))
+      .reduce((s, i) => s + (i.tutar || 0), 0);
+    return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
+  }).filter(item => item.gelir > 0 || item.gider > 0);
+}

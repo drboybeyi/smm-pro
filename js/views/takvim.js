@@ -1,5 +1,8 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
-import { formatTL, formatTarih, kisaltilmisRakam } from '../utils.js';
+import {
+  formatTL, formatTarih, kisaltilmisRakam,
+  islemKasaHarekedinSayilirMi, gunKasaOzeti
+} from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 
 export function openTakvim() {
@@ -22,17 +25,32 @@ export function openTakvim() {
     const vadeler     = getVadeler();
 
     const ayPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
-    const dayNetMap = {};
+
+    // Per-day, per-kasa net hareketi
+    const dayKasaMap = {};
     islemler.forEach(islem => {
       if (!islem.tarih || !islem.tarih.startsWith(ayPrefix)) return;
-      if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') return;
-      const net = islem.tip === 'gelir' ? (islem.tutar || 0)
-                : islem.tip === 'gider' ? -(islem.tutar || 0)
-                : 0;
-      dayNetMap[islem.tarih] = (dayNetMap[islem.tarih] || 0) + net;
+      if (!islemKasaHarekedinSayilirMi(islem)) return;
+      const date = islem.tarih;
+      if (!dayKasaMap[date]) dayKasaMap[date] = {};
+      const add = (kasaId, amt) => {
+        dayKasaMap[date][kasaId] = (dayKasaMap[date][kasaId] || 0) + amt;
+      };
+      if (islem.tip === 'gelir')    add(islem.kasaId, islem.tutar || 0);
+      else if (islem.tip === 'gider') add(islem.kasaId, -(islem.tutar || 0));
+      else if (islem.tip === 'transfer') {
+        add(islem.kasaId, -(islem.tutar || 0));
+        if (islem.hedefKasaId) add(islem.hedefKasaId, islem.tutar || 0);
+      }
     });
 
-    // Build vade map from vadeler state (durum=bekliyor, this month)
+    // Day net totals (for has-data class)
+    const dayNetMap = {};
+    Object.entries(dayKasaMap).forEach(([date, nets]) => {
+      dayNetMap[date] = Object.values(nets).reduce((s, n) => s + n, 0);
+    });
+
+    // Build vade map
     const vadeByGun = {};
     vadeler
       .filter(v => v.durum === 'bekliyor' && v.vadeTarih?.startsWith(ayPrefix))
@@ -57,19 +75,34 @@ export function openTakvim() {
     for (let i = 0; i < startDow; i++) {
       cells += `<div class="cal-cell cal-cell-empty"></div>`;
     }
+
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const net        = dayNetMap[dateStr];
+      const dateStr    = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const isToday    = dateStr === todayStr;
       const gunVadeler = vadeByGun[dateStr] || [];
       const hasVade    = gunVadeler.length > 0;
       const vadeToplam = gunVadeler.reduce((s, v) => s + (v.tutar || 0), 0);
+      const hasData    = dayNetMap[dateStr] !== undefined;
 
-      let netHtml = '';
-      if (net !== undefined && net !== 0) {
-        const cls    = net > 0 ? 'cal-net-pos' : 'cal-net-neg';
-        const absStr = formatTL(Math.abs(net));
-        netHtml = `<span class="${cls}">${net > 0 ? '+' : '-'}${absStr}</span>`;
+      // Per-kasa rows for this day (sorted by |net| desc)
+      const kasaNets = dayKasaMap[dateStr]
+        ? Object.entries(dayKasaMap[dateStr])
+            .map(([kasaId, net]) => ({ kasa: kasalar.find(k => k.id === kasaId), net }))
+            .filter(item => item.kasa && item.net !== 0)
+            .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))
+        : [];
+
+      const visible = kasaNets.slice(0, 2);
+      const extras  = kasaNets.length - visible.length;
+
+      let kasaHtml = visible.map(({ kasa, net }) => {
+        const cls = net > 0 ? 'cal-net-pos' : 'cal-net-neg';
+        const sign = net > 0 ? '+' : '-';
+        return `<span class="${cls} cal-kasa-satir">${kasa.emoji}${sign}${kisaltilmisRakam(Math.abs(net))}</span>`;
+      }).join('');
+
+      if (extras > 0) {
+        kasaHtml += `<span class="cal-cell-extras">+${extras}</span>`;
       }
 
       let vadeHtml = '';
@@ -79,10 +112,10 @@ export function openTakvim() {
       }
 
       cells += `
-        <div class="cal-cell${isToday ? ' cal-today' : ''}${net !== undefined ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
+        <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
              data-date="${dateStr}">
           <span class="cal-day-num">${d}</span>
-          ${netHtml}
+          ${kasaHtml}
           ${vadeHtml}
         </div>`;
     }
@@ -99,7 +132,7 @@ export function openTakvim() {
           <button class="btn btn-secondary btn-sm" id="takvim-next">Sonraki ›</button>
         </div>
         <div class="cal-grid">
-          ${DAY_HEADERS.map(d => `<div class="cal-header-cell">${d}</div>`).join('')}
+          ${DAY_HEADERS.map(h => `<div class="cal-header-cell">${h}</div>`).join('')}
           ${cells}
         </div>
       </div>`;
@@ -126,7 +159,7 @@ export function openTakvim() {
           i.cariEtkisi !== 'borc_yaz' &&
           i.cariEtkisi !== 'borc_cikar'
         );
-        const gunVadeler  = vadeByGun[dateStr] || [];
+        const gunVadeler = vadeByGun[dateStr] || [];
         if (gunIslemler.length || gunVadeler.length) {
           showGunDetay(dateStr, gunIslemler, kasalar, kategoriler, gunVadeler, cariler, islemler);
         }
@@ -180,6 +213,25 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, caril
     </div>
     <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">` : '';
 
+  // Kasa hareketleri bölümü
+  const kasaOzeti = gunKasaOzeti(dateStr, kasalar, tumIslemler);
+  const kasaHtml = kasaOzeti.length ? `
+    <div class="gun-kasa-section">
+      <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px">💰 Kasa Hareketleri</div>
+      ${kasaOzeti.map(({ ad, emoji, gelir, gider, net }) => {
+        const netRenk  = net > 0 ? 'var(--success)' : net < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+        const netSign  = net > 0 ? '+' : '';
+        return `<div class="gun-kasa-satir">
+          <span>${emoji} ${ad}</span>
+          <span style="font-size:12px;color:var(--text-secondary)">
+            ${gelir > 0 ? `+${formatTL(gelir)}` : ''}${gelir > 0 && gider > 0 ? ' / ' : ''}${gider > 0 ? `-${formatTL(gider)}` : ''}
+          </span>
+          <span style="font-weight:700;color:${netRenk}">${netSign}${formatTL(net)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">` : '';
+
   const listHTML = islemler.map(islem => {
     const { color, prefix, cls } = tipInfo(islem.tip);
     const kasa     = kasalar.find(k => k.id === islem.kasaId);
@@ -217,6 +269,7 @@ function showGunDetay(dateStr, islemler, kasalar, kategoriler, gunVadeler, caril
       </div>
       <div class="modal-body" style="padding-top:8px">
         ${vadeHtml}
+        ${kasaHtml}
         ${islemler.length ? `
         <div class="gun-detay-ozet">
           <span class="gun-ozet-item" style="color:var(--success)">+${formatTL(gunGelir)}</span>

@@ -2179,3 +2179,122 @@ select.form-control {
   flex-wrap: wrap;
   align-items: center;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   TARİH ARALIĞI — MODAL + INFO ÇUBUĞU (Faz 4.8)
+═══════════════════════════════════════════════════════════ */
+
+.aralik-info-cubugu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.aralik-sifirla-btn {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+
+.aralik-sifirla-btn:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+.ta-secenekler {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ta-secenek {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+}
+
+.ta-secenek:hover {
+  background: var(--bg-secondary);
+}
+
+.ta-aktif {
+  border-color: var(--accent);
+  background: #f0e8dc;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAKVİM HÜCRE — KASA DETAY (Faz 4.8)
+═══════════════════════════════════════════════════════════ */
+
+.cal-cell {
+  min-height: 72px;
+}
+
+.cal-kasa-satir {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-cell-extras {
+  display: block;
+  font-size: 8px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GÜN DETAY MODAL — KASA HAREKETLERİ (Faz 4.8)
+═══════════════════════════════════════════════════════════ */
+
+.gun-kasa-section {
+  margin-bottom: 4px;
+}
+
+.gun-kasa-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.gun-kasa-satir:last-child {
+  border-bottom: none;
+}
