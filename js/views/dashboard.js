@@ -9,6 +9,7 @@ import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
 import { openKasaDetay } from './kasaDetay.js';
+import { openTumKasalarDetay } from './tumKasalarDetay.js';
 
 const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -77,7 +78,7 @@ function kasalarList(kasalar, islemler) {
 
   const toplamRenk = toplam > 0 ? 'var(--success)' : toplam < 0 ? 'var(--danger)' : 'var(--text-secondary)';
   const toplamSatir = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 7px;border-top:2px solid var(--accent);background:var(--bg-tertiary,#ede6d8);margin:0 -16px;padding-left:16px;padding-right:16px">
+    <div class="dash-toplam-satir" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 7px;border-top:2px solid var(--accent);background:var(--bg-tertiary,#ede6d8);margin:0 -16px;padding-left:16px;padding-right:16px;cursor:pointer">
       <span style="font-size:14px;font-weight:700;color:var(--text-primary)">📊 TOPLAM</span>
       <span style="font-size:14px;font-weight:700;color:${toplamRenk}">${formatTL(toplam)}</span>
     </div>`;
@@ -329,6 +330,8 @@ export default {
     document.querySelectorAll('.dash-kasa-satir').forEach(row => {
       row.addEventListener('click', () => openKasaDetay(row.dataset.kasaId));
     });
+
+    document.querySelector('.dash-toplam-satir')?.addEventListener('click', () => openTumKasalarDetay());
 
     document.getElementById('dashIslemBtn')?.addEventListener('click', e => {
       e.preventDefault();

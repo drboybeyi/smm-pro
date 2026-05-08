@@ -14,6 +14,7 @@ import { bugun, formatTarih } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
 import TakvimView, { openTakvim } from './views/takvim.js';
 import KasaDetay from './views/kasaDetay.js';
+import TumKasalarDetay from './views/tumKasalarDetay.js';
 import { openCariBorclar } from './views/cariBorclar.js';
 import { openCariler } from './views/cariler.js';
 import { openCariDetay } from './views/cariDetay.js';
@@ -28,7 +29,8 @@ const VIEWS = {
   dashboard:   Dashboard,
   islemler:    Islemler,
   takvim:      TakvimView,
-  kasaDetay:   KasaDetay,
+  kasaDetay:        KasaDetay,
+  tumKasalarDetay:  TumKasalarDetay,
   kategoriler: Kategoriler,
   ayarlar:     Ayarlar
 };
