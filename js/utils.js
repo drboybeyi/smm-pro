@@ -456,6 +456,38 @@ export function kasaGunlukNet(kasaId, gun, islemler) {
     }, 0);
 }
 
+// ─── Bugün Özet Yardımcıları ──────────────────────────────────
+
+export function bugunOzet(islemler) {
+  const today    = bugun();
+  const bugunler = islemler.filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i));
+  const gelirler = bugunler.filter(i => i.tip === 'gelir');
+  const giderler = bugunler.filter(i => i.tip === 'gider');
+  const gelir    = gelirler.reduce((s, i) => s + (i.tutar || 0), 0);
+  const gider    = giderler.reduce((s, i) => s + (i.tutar || 0), 0);
+  return { gelir, gider, net: gelir - gider, gelirAdet: gelirler.length, giderAdet: giderler.length };
+}
+
+export function bugunKasaDagilim(islemler, kasalar) {
+  const today    = bugun();
+  const bugunler = islemler.filter(i => i.tarih === today && islemKasaHarekedinSayilirMi(i));
+  return kasalar
+    .filter(k => !k.silindi)
+    .map(k => {
+      let gelir = 0, gider = 0;
+      bugunler.forEach(i => {
+        const t = i.tutar || 0;
+        if      (i.tip === 'gelir'    && i.kasaId      === k.id) gelir += t;
+        else if (i.tip === 'gider'    && i.kasaId      === k.id) gider += t;
+        else if (i.tip === 'transfer' && i.kasaId      === k.id) gider += t;
+        else if (i.tip === 'transfer' && i.hedefKasaId === k.id) gelir += t;
+      });
+      return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelir, gider, net: gelir - gider };
+    })
+    .filter(k => k.gelir > 0 || k.gider > 0)
+    .sort((a, b) => b.net - a.net);
+}
+
 // ─── Cari Borç Yardımcıları ───────────────────────────────────
 
 export function tedarikciBorclari(cariler, islemler) {

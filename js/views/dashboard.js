@@ -2,16 +2,18 @@ import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getTar
 import {
   formatTL, formatTarih, bugun, gunFarki,
   aralikIcindeMi, islemTipiEtiketi, islemTutarFormati,
-  islemKasaHarekedinSayilirMi
+  kisaltilmisRakam, bugunOzet, bugunKasaDagilim
 } from '../utils.js';
+import { openIslemDetay } from '../components/islemDetay.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
 import { openKasaDetay } from './kasaDetay.js';
 
-const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
-               'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const AYLAR  = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+                'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const GUNLER = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 // ─── Ay navigasyon yardımcıları ───────────────────────────────
 
@@ -115,28 +117,170 @@ function bugunOdeKarti(vadeler, cariler, today) {
     </div>`;
 }
 
-// ─── Bugünün gideri ───────────────────────────────────────────
+// ─── Bugün bölümü — 3 kart ────────────────────────────────────
 
-function bugunGiderKarti(islemler, today) {
-  const bugunGiderler = islemler.filter(i =>
-    i.tarih === today && islemKasaHarekedinSayilirMi(i) && i.tip === 'gider'
-  );
-  const toplam = bugunGiderler.reduce((s, i) => s + (i.tutar || 0), 0);
-  const sayi   = bugunGiderler.length;
+function bugunBolumu(islemler, today) {
+  const { gelir, gider, net } = bugunOzet(islemler);
+  const [ty, tm, td] = today.split('-').map(Number);
+  const gunAdi   = GUNLER[new Date(ty, tm - 1, td).getDay()];
+  const tarihStr = `${td} ${AYLAR[tm - 1]} ${ty} ${gunAdi}`;
+  const netRenk  = net > 0 ? 'var(--success)' : net < 0 ? 'var(--danger)' : 'var(--text-secondary)';
 
-  if (!sayi) {
-    return `
-      <div class="bugun-gider-kart">
-        <div class="bugun-gider-baslik">💸 Bugünün Gideri</div>
-        <div class="bugun-gider-yok">Bugün gider yok</div>
-      </div>`;
-  }
   return `
-    <div class="bugun-gider-kart bugun-gider-kart-aktif" id="dashBugunGiderKart" style="cursor:pointer">
-      <div class="bugun-gider-baslik">💸 Bugünün Gideri</div>
-      <div class="bugun-gider-tutar">${formatTL(toplam)}</div>
-      <div class="bugun-gider-alt">${sayi} işlem</div>
+    <div class="section-header bugun-header" id="dashBugunBaslik" style="cursor:pointer;user-select:none">
+      <span class="section-title">📅 BUGÜN</span>
+      <span style="font-size:12px;color:var(--text-secondary)">${tarihStr}</span>
+    </div>
+    <div class="bugun-grid">
+      <div class="bugun-kart" id="dashBugunGelir">
+        <div class="bugun-kart-etiket">Gelir</div>
+        <div class="bugun-kart-deger" style="color:var(--success)">+${formatTL(gelir)}</div>
+      </div>
+      <div class="bugun-kart" id="dashBugunGider">
+        <div class="bugun-kart-etiket">Gider</div>
+        <div class="bugun-kart-deger" style="color:var(--danger)">-${formatTL(gider)}</div>
+      </div>
+      <div class="bugun-kart" id="dashBugunNet">
+        <div class="bugun-kart-etiket">Net</div>
+        <div class="bugun-kart-deger" style="color:${netRenk}">${net >= 0 ? '+' : ''}${formatTL(net)}</div>
+      </div>
     </div>`;
+}
+
+// ─── Bugün Detay Modal (inline) ────────────────────────────────
+
+function openBugunDetay() {
+  if (document.getElementById('bd-overlay')) return;
+
+  const islemler    = getIslemler();
+  const kasalar     = getKasalar().filter(k => !k.silindi);
+  const kategoriler = getKategoriler();
+  const cariler     = getCariler();
+  const today       = bugun();
+
+  const { gelir, gider, net, gelirAdet, giderAdet } = bugunOzet(islemler);
+  const dagilim = bugunKasaDagilim(islemler, kasalar);
+
+  const [ty, tm, td] = today.split('-').map(Number);
+  const gunAdi  = GUNLER[new Date(ty, tm - 1, td).getDay()];
+  const baslik  = `${td} ${AYLAR[tm - 1]} ${ty} — ${gunAdi}`;
+  const netRenk = net > 0 ? 'var(--success)' : net < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+
+  // Özet
+  const ozetHtml = `
+    <div class="bd-section">
+      <div class="bd-section-baslik">Özet</div>
+      <div class="bd-ozet-satir">
+        <span>Gelir</span>
+        <span><span style="font-weight:700;color:var(--success)">+${formatTL(gelir)}</span><span class="bd-adet">${gelirAdet} işlem</span></span>
+      </div>
+      <div class="bd-ozet-satir">
+        <span>Gider</span>
+        <span><span style="font-weight:700;color:var(--danger)">-${formatTL(gider)}</span><span class="bd-adet">${giderAdet} işlem</span></span>
+      </div>
+      <div class="bd-ozet-satir bd-ozet-net">
+        <span>Net</span>
+        <span style="color:${netRenk};font-weight:700">${net >= 0 ? '+' : ''}${formatTL(net)}</span>
+      </div>
+    </div>`;
+
+  // Kasa Dağılımı
+  const dagilimIc = dagilim.length === 0
+    ? `<p style="font-size:13px;color:var(--text-secondary);padding:4px 0">Bugün kasa hareketi yok</p>`
+    : dagilim.map(({ ad, emoji, gelir: g, gider: c, net: n }) => {
+        const nR = n > 0 ? 'var(--success)' : n < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+        return `
+          <div class="bd-kasa-satir">
+            <span class="bd-kasa-ad">${emoji} ${ad}</span>
+            <span class="bd-kasa-detay">
+              <span style="color:var(--success)">+${kisaltilmisRakam(g)}</span>
+              <span class="bd-kasa-sep">·</span>
+              <span style="color:var(--danger)">-${kisaltilmisRakam(c)}</span>
+              <span class="bd-kasa-net" style="color:${nR}">${n >= 0 ? '+' : '-'}${kisaltilmisRakam(Math.abs(n))}</span>
+            </span>
+          </div>`;
+      }).join('');
+  const dagilimHtml = `
+    <div class="bd-section">
+      <div class="bd-section-baslik">Kasa Dağılımı</div>
+      ${dagilimIc}
+    </div>`;
+
+  // İşlemler
+  const bugunIslemler = islemler
+    .filter(i => i.tarih === today)
+    .sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0));
+
+  const islemlerIc = bugunIslemler.length === 0
+    ? `<p style="font-size:13px;color:var(--text-secondary);padding:4px 0">Bugün işlem yok</p>`
+    : bugunIslemler.map(islem => {
+        const kasa     = kasalar.find(k => k.id === islem.kasaId);
+        const kategori = kategoriler.find(k => k.id === islem.kategoriId);
+        const cari     = islem.cariId ? cariler.find(c => c.id === islem.cariId) : null;
+        let icon, title, tutarStr, tutarRenk;
+        if (islem.tip === 'transfer') {
+          const hedef = kasalar.find(k => k.id === islem.hedefKasaId);
+          icon = '↔'; title = `${kasa?.ad || '?'} → ${hedef?.ad || '?'}`;
+          tutarStr = `↔ ${formatTL(islem.tutar)}`; tutarRenk = 'var(--accent)';
+        } else if (islem.cariEtkisi === 'borc_yaz' || islem.cariEtkisi === 'borc_cikar') {
+          icon = '📋'; title = islem.aciklama || islemTipiEtiketi(islem) + (cari ? ` — ${cari.ad}` : '');
+          tutarStr = formatTL(islem.tutar); tutarRenk = 'var(--warning)';
+        } else if (islem.tip === 'gelir') {
+          icon = kategori?.emoji || '▲'; title = islem.aciklama || kategori?.ad || 'Gelir';
+          tutarStr = `+${formatTL(islem.tutar)}`; tutarRenk = 'var(--success)';
+        } else {
+          icon = kategori?.emoji || '▼'; title = islem.aciklama || kategori?.ad || 'Gider';
+          tutarStr = `-${formatTL(islem.tutar)}`; tutarRenk = 'var(--danger)';
+        }
+        return `
+          <div class="bd-islem-satir" data-islem-id="${islem.id}">
+            <div class="bd-islem-icon">${icon}</div>
+            <div class="bd-islem-body">
+              <div class="bd-islem-title">${title}</div>
+              <div class="bd-islem-sub">${kasa?.ad || (cari ? cari.ad : '—')}</div>
+            </div>
+            <div class="bd-islem-tutar" style="color:${tutarRenk}">${tutarStr}</div>
+          </div>`;
+      }).join('');
+  const islemlerHtml = `
+    <div class="bd-section">
+      <div class="bd-section-baslik">İşlemler (${bugunIslemler.length})</div>
+      ${islemlerIc}
+    </div>`;
+
+  // Modal
+  const overlay = document.createElement('div');
+  overlay.id = 'bd-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">📅 ${baslik}</span>
+        <button class="modal-close" id="bdKapat">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0">
+        ${ozetHtml}${dagilimHtml}${islemlerHtml}
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="bdKapatAlt" style="flex:1">Kapat</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    overlay.classList.add('modal-closing');
+    setTimeout(() => overlay.remove(), 220);
+  };
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.getElementById('bdKapat')?.addEventListener('click', close);
+  document.getElementById('bdKapatAlt')?.addEventListener('click', close);
+
+  document.querySelectorAll('.bd-islem-satir').forEach(row => {
+    row.addEventListener('click', () => {
+      const islem = getIslemler().find(i => i.id === row.dataset.islemId);
+      if (islem) openIslemDetay(islem);
+    });
+  });
 }
 
 // ─── Yaklaşan ödemeler ────────────────────────────────────────
@@ -280,7 +424,7 @@ export default {
 
       ${yaklaşanOdemelerCard(cariler, vadeler, today)}
 
-      ${bugunGiderKarti(islemler, today)}
+      ${bugunBolumu(islemler, today)}
 
       ${kasalar.length ? `
         <div class="section-header">
@@ -322,8 +466,8 @@ export default {
 
     document.getElementById('dashAyBaslik')?.addEventListener('click', () => openAyOzet());
 
-    document.getElementById('dashBugunGiderKart')?.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('defter:open-takvim'));
+    ['dashBugunBaslik','dashBugunGelir','dashBugunGider','dashBugunNet'].forEach(id => {
+      document.getElementById(id)?.addEventListener('click', () => openBugunDetay());
     });
 
     document.querySelectorAll('.dash-kasa-satir').forEach(row => {
