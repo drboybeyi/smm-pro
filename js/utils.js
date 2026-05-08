@@ -414,6 +414,48 @@ export function ayKasaOzeti(islemler, kasalar, baslangic, bitis) {
   }).filter(item => item.gelir > 0 || item.gider > 0);
 }
 
+// ─── Kasa Aralık Hesaplamaları ────────────────────────────────
+
+export function kasaAralikIslemleri(kasaId, baslangic, bitis, islemler) {
+  return islemler.filter(i => {
+    if (!aralikIcindeMi(i.tarih, baslangic, bitis)) return false;
+    if (i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar') return false;
+    if (i.kasaId === kasaId) return true;
+    if (i.tip === 'transfer' && i.hedefKasaId === kasaId) return true;
+    return false;
+  });
+}
+
+export function kasaAralikOzet(kasaId, baslangic, bitis, islemler) {
+  const hareketler = kasaAralikIslemleri(kasaId, baslangic, bitis, islemler);
+  let gelen = 0, cikan = 0, gelenAdet = 0, cikanAdet = 0;
+  hareketler.forEach(i => {
+    const t = i.tutar || 0;
+    if ((i.tip === 'gelir'    && i.kasaId      === kasaId) ||
+        (i.tip === 'transfer' && i.hedefKasaId === kasaId)) {
+      gelen += t; gelenAdet++;
+    } else {
+      cikan += t; cikanAdet++;
+    }
+  });
+  return { gelen, cikan, net: gelen - cikan, gelenAdet, cikanAdet };
+}
+
+export function kasaGunlukNet(kasaId, gun, islemler) {
+  return islemler
+    .filter(i => {
+      if (i.tarih !== gun) return false;
+      if (i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar') return false;
+      return i.kasaId === kasaId || (i.tip === 'transfer' && i.hedefKasaId === kasaId);
+    })
+    .reduce((sum, i) => {
+      const t = i.tutar || 0;
+      if ((i.tip === 'gelir'    && i.kasaId      === kasaId) ||
+          (i.tip === 'transfer' && i.hedefKasaId === kasaId)) return sum + t;
+      return sum - t;
+    }, 0);
+}
+
 // ─── Cari Borç Yardımcıları ───────────────────────────────────
 
 export function tedarikciBorclari(cariler, islemler) {

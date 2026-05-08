@@ -8,6 +8,7 @@ import { hesaplaKasaBakiyesi } from '../db.js';
 import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
+import { openKasaDetay } from './kasaDetay.js';
 
 const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -65,7 +66,8 @@ function kasalarList(kasalar, islemler) {
   return kasalar.map(k => {
     const bakiye = hesaplaKasaBakiyesi(k.id, islemler);
     return `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div class="dash-kasa-satir" data-kasa-id="${k.id}"
+           style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
         <span style="font-size:14px">${k.emoji} ${k.ad}</span>
         <span style="font-size:14px;font-weight:700;color:${bakiye >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatTL(bakiye)}</span>
       </div>`;
@@ -311,6 +313,10 @@ export default {
 
     document.getElementById('dashBugunGiderKart')?.addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('defter:open-takvim'));
+    });
+
+    document.querySelectorAll('.dash-kasa-satir').forEach(row => {
+      row.addEventListener('click', () => openKasaDetay(row.dataset.kasaId));
     });
 
     document.getElementById('dashIslemBtn')?.addEventListener('click', e => {

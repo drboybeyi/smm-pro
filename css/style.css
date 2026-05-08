@@ -2844,3 +2844,281 @@ select.form-control {
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+/* ─── Faz 4.13: Kasa Detay Sayfası ─────────────────────────── */
+
+.kasa-detay-page {
+  padding: 0;
+}
+
+/* Header */
+.kd-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: var(--header-h);
+  z-index: 10;
+}
+
+.kd-header-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 6px;
+}
+
+.kd-geri-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 8px 4px 0;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.kd-kasa-baslik {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.kd-menu-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.kd-bakiye {
+  padding: 4px 14px 12px;
+  text-align: center;
+}
+
+.kd-bakiye-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.kd-bakiye-tutar {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* Aralık Bar */
+.kd-aralik-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.kd-aralik-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+
+.kd-aralik-btn.aktif {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.kd-ozel-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.kd-ozel-sep {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Özet Kartı */
+.kd-ozet-kart {
+  margin: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.kd-ozet-baslik {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+}
+
+.kd-ozet-satirlar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kd-ozet-satir {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.kd-ozet-etiket {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.kd-ozet-deger {
+  font-weight: 700;
+}
+
+.kd-ozet-adet {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.kd-ozet-net-satir .kd-ozet-deger {
+  font-size: 16px;
+}
+
+.kd-ozet-net-satir {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+/* Mini Takvim */
+.kd-mini-takvim-section {
+  margin: 0 0 4px;
+}
+
+.kd-section-baslik {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 10px 14px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kd-cal-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 14px 6px;
+}
+
+.kd-cal-nav-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.kd-mini-grid {
+  padding: 4px 6px;
+}
+
+.kd-cal-net {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.kd-cal-net-pos {
+  color: var(--success);
+}
+
+.kd-cal-net-neg {
+  color: var(--danger);
+}
+
+/* İşlem Listesi */
+.kd-islem-section {
+  margin-top: 4px;
+}
+
+.kd-highlight {
+  background: rgba(139, 111, 71, 0.15) !important;
+  transition: background 0.3s;
+}
+
+/* ⋯ Menü Popup */
+.kd-menu-popup {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px var(--shadow);
+  z-index: 500;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.kd-menu-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.kd-menu-item:last-child {
+  border-bottom: none;
+}
+
+.kd-menu-item:hover {
+  background: var(--bg-secondary);
+}
+
+.kd-menu-item-danger {
+  color: var(--danger);
+}
+
+/* Dashboard Kasa Satır Hover */
+.dash-kasa-satir:hover {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
