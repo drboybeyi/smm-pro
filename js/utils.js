@@ -456,6 +456,44 @@ export function kasaGunlukNet(kasaId, gun, islemler) {
     }, 0);
 }
 
+// ─── Tüm Kasalar Yardımcıları ─────────────────────────────────
+
+export function tumKasalarOzet(kasalar, baslangic, bitis, islemler) {
+  const aktifIds = new Set(kasalar.map(k => k.id));
+  let gelen = 0, cikan = 0, gelenAdet = 0, cikanAdet = 0;
+  islemler.forEach(i => {
+    if (!aralikIcindeMi(i.tarih, baslangic, bitis)) return;
+    if (i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar') return;
+    if (!i.kasaId || !aktifIds.has(i.kasaId)) return;
+    if (i.tip === 'gelir') { gelen += i.tutar || 0; gelenAdet++; }
+    if (i.tip === 'gider') { cikan += i.tutar || 0; cikanAdet++; }
+  });
+  return { gelen, cikan, net: gelen - cikan, gelenAdet, cikanAdet };
+}
+
+export function tumKasalarDagilim(kasalar, baslangic, bitis, islemler) {
+  return kasalar
+    .map(k => {
+      const { gelen, cikan, net } = kasaAralikOzet(k.id, baslangic, bitis, islemler);
+      return { kasaId: k.id, ad: k.ad, emoji: k.emoji, gelen, cikan, net };
+    })
+    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+}
+
+export function tumKasalarGunlukNet(gun, kasalar, islemler) {
+  return islemler
+    .filter(i => {
+      if (i.tarih !== gun) return false;
+      if (i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar') return false;
+      return !!i.kasaId;
+    })
+    .reduce((sum, i) => {
+      if (i.tip === 'gelir') return sum + (i.tutar || 0);
+      if (i.tip === 'gider') return sum - (i.tutar || 0);
+      return sum;
+    }, 0);
+}
+
 // ─── Bugün Özet Yardımcıları ──────────────────────────────────
 
 export function bugunOzet(islemler) {

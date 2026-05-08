@@ -79,9 +79,12 @@ function kasalarList(kasalar, islemler) {
 
   const toplamRenk = toplam > 0 ? 'var(--success)' : toplam < 0 ? 'var(--danger)' : 'var(--text-secondary)';
   const toplamSatir = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 7px;border-top:2px solid var(--accent);background:var(--bg-tertiary,#ede6d8);margin:0 -16px;padding-left:16px;padding-right:16px">
-      <span style="font-size:14px;font-weight:700;color:var(--text-primary)">📊 TOPLAM</span>
-      <span style="font-size:14px;font-weight:700;color:${toplamRenk}">${formatTL(toplam)}</span>
+    <div class="kasa-toplam"
+         onclick="tumKasalarDetayAc()"
+         ontouchend="event.preventDefault(); tumKasalarDetayAc();"
+         role="button" tabindex="0">
+      <span class="kasa-toplam-label">📊 TOPLAM</span>
+      <span class="kasa-toplam-tutar" style="color:${toplamRenk}">${formatTL(toplam)}</span>
     </div>`;
 
   return rows + toplamSatir;
