@@ -63,8 +63,10 @@ function metricCard(label, value, cls) {
 
 function kasalarList(kasalar, islemler) {
   if (!kasalar.length) return '';
-  return kasalar.map(k => {
+  let toplam = 0;
+  const rows = kasalar.map(k => {
     const bakiye = hesaplaKasaBakiyesi(k.id, islemler);
+    toplam += bakiye;
     return `
       <div class="dash-kasa-satir" data-kasa-id="${k.id}"
            style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
@@ -72,6 +74,15 @@ function kasalarList(kasalar, islemler) {
         <span style="font-size:14px;font-weight:700;color:${bakiye >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatTL(bakiye)}</span>
       </div>`;
   }).join('');
+
+  const toplamRenk = toplam > 0 ? 'var(--success)' : toplam < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+  const toplamSatir = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 7px;border-top:2px solid var(--accent);background:var(--bg-tertiary,#ede6d8);margin:0 -16px;padding-left:16px;padding-right:16px">
+      <span style="font-size:14px;font-weight:700;color:var(--text-primary)">📊 TOPLAM</span>
+      <span style="font-size:14px;font-weight:700;color:${toplamRenk}">${formatTL(toplam)}</span>
+    </div>`;
+
+  return rows + toplamSatir;
 }
 
 // ─── Bugün öde kartı ──────────────────────────────────────────
