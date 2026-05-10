@@ -8,6 +8,7 @@ import { show as showToast } from '../components/toast.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 import { openCariForm } from '../components/cariForm.js';
 import { openVadePlani, openVadeEkle } from './vadePlani.js';
+import { openMaasOde } from './maasOde.js';
 
 const ETKI_LABEL = {
   borc_yaz:   '📋 Borç',
@@ -217,6 +218,8 @@ export function openCariDetay(cariInput) {
           ${vadeCardCari(cari, today)}
 
           <div class="cari-aksiyonlar">
+            ${cari.tip === 'personel' ? `
+              <button class="btn btn-primary" id="cd-maas-ode">💰 Maaş Öde</button>` : ''}
             ${btns.map(b => `
               <button class="btn ${b.cls} cari-aksiyon-btn" data-etkisi="${b.etkisi}">${b.label}</button>
             `).join('')}
@@ -236,6 +239,10 @@ export function openCariDetay(cariInput) {
 
     overlay.querySelector('#cd-duzenle')?.addEventListener('click', () => {
       openCariForm(cari);
+    });
+
+    overlay.querySelector('#cd-maas-ode')?.addEventListener('click', () => {
+      openMaasOde(cari);
     });
 
     overlay.querySelector('#cd-sil')?.addEventListener('click', () => {

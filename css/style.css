@@ -2806,6 +2806,104 @@ select.form-control {
   font-weight: 600;
 }
 
+/* === MAAŞ ÖDE WIZARD === */
+
+.maas-avans-satir {
+  background: #fffbf0;
+  border: 1px solid #e8d8a0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.maas-avans-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.maas-avans-info strong {
+  color: var(--warning);
+  font-size: 15px;
+}
+
+.maas-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.maas-toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.maas-net-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.maas-net-satir strong {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.maas-dagilim-baslik {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.maas-dagilim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.maas-dagilim-item .form-label {
+  margin-bottom: 4px;
+}
+
+.maas-dogrulama {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.maas-valid {
+  background: #edf7e6;
+  color: var(--success);
+  border: 1px solid #c3ddb0;
+}
+
+.maas-invalid {
+  background: #fdf0ef;
+  color: var(--danger);
+  border: 1px solid #e8c0b8;
+}
+
 .cb-vade-uzak {
   color: var(--text-secondary);
 }
