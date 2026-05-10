@@ -69,7 +69,7 @@ export default {
   }
 };
 
-function showKategoriModal(kat, defaultTip) {
+export function showKategoriModal(kat, defaultTip) {
   const isEdit = kat !== null;
   if (document.getElementById('kat-modal')) return;
 

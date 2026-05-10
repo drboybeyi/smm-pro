@@ -142,6 +142,9 @@ function emptyHtml(query) {
 
 export default {
   render() {
+    const navFilter = localStorage.getItem('islemler-filter');
+    if (navFilter) { currentFilter = navFilter; localStorage.removeItem('islemler-filter'); }
+
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();

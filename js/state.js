@@ -21,13 +21,14 @@ function _loadAralik() {
 }
 
 const state = {
-  islemler:     [],
-  kasalar:      [],
-  kategoriler:  [],
-  cariler:      [],
-  vadeler:      [],
-  ayarlar:      {},
-  tarihAraligi: _loadAralik()
+  islemler:      [],
+  kasalar:       [],
+  kategoriler:   [],
+  cariler:       [],
+  vadeler:       [],
+  ayarlar:       {},
+  sabitGiderler: [],
+  tarihAraligi:  _loadAralik()
 };
 
 // ─── PubSub ────────────────────────────────────────────────────────────────────
@@ -46,14 +47,15 @@ function publish(event, data) {
 
 // ─── Getters ───────────────────────────────────────────────────────────────────
 
-export const getState        = () => state;
-export const getIslemler     = () => state.islemler;
-export const getKasalar      = () => state.kasalar;
-export const getKategoriler  = () => state.kategoriler;
-export const getCariler      = () => state.cariler;
-export const getVadeler      = () => state.vadeler;
-export const getAyarlar      = () => state.ayarlar;
-export const getTarihAraligi = () => state.tarihAraligi;
+export const getState          = () => state;
+export const getIslemler       = () => state.islemler;
+export const getKasalar        = () => state.kasalar;
+export const getKategoriler    = () => state.kategoriler;
+export const getCariler        = () => state.cariler;
+export const getVadeler        = () => state.vadeler;
+export const getAyarlar        = () => state.ayarlar;
+export const getSabitGiderler  = () => state.sabitGiderler;
+export const getTarihAraligi   = () => state.tarihAraligi;
 
 // ─── Setters ──────────────────────────────────────────────────────────────────
 
@@ -80,6 +82,11 @@ export function setCariler(liste) {
 export function setVadeler(liste) {
   state.vadeler = liste;
   publish('vadeler', state.vadeler);
+}
+
+export function setSabitGiderler(liste) {
+  state.sabitGiderler = liste;
+  publish('sabitGiderler', state.sabitGiderler);
 }
 
 export function setAyarlar(ayarlar) {

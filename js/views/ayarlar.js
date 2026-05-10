@@ -1,8 +1,12 @@
-import { getAyarlar, getKasalar, getKategoriler, getIslemler } from '../state.js';
+import { getAyarlar, getKasalar, getKategoriler, getIslemler, getSabitGiderler } from '../state.js';
 import { updateAyarlar, hesaplaKasaBakiyesi } from '../db.js';
 import { formatTL } from '../utils.js';
 import { auth, logoutUser } from '../firebase-config.js';
 import { showKasaModal } from './kasalar.js';
+import { showKategoriModal } from './kategoriler.js';
+import { showSabitGiderModal } from './sabitGiderler.js';
+
+let _ayKatTab = 'gider';
 
 export default {
   render() {
@@ -13,8 +17,9 @@ export default {
     const email       = auth.currentUser?.email || '';
     const toplamBakiye = kasalar.reduce((sum, k) => sum + hesaplaKasaBakiyesi(k.id, islemler), 0);
 
-    const gelirKatlar = kategoriler.filter(k => k.tip === 'gelir');
-    const giderKatlar = kategoriler.filter(k => k.tip === 'gider');
+    const gelirKatlar  = kategoriler.filter(k => k.tip === 'gelir');
+    const giderKatlar  = kategoriler.filter(k => k.tip === 'gider');
+    const sabitGiderler = getSabitGiderler();
 
     const fv             = a.formVarsayilanlari || {};
     const fvTip          = fv.tip || 'gider';
@@ -79,6 +84,43 @@ export default {
                   <button class="btn btn-secondary btn-sm ay-kasalar-edit" data-kasa-id="${k.id}" style="padding:4px 10px">✎</button>
                 </div>`;
             }).join('')}
+      </div>
+
+      <!-- ─── Kategoriler Yönetimi ─── -->
+      <div class="card mb-3">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;color:var(--accent)">🏷️ Kategoriler</div>
+          <button class="btn btn-primary btn-sm" id="btnAyYeniKat">+ Yeni</button>
+        </div>
+        <div class="filter-tabs" id="ay-kat-tabs" style="margin-bottom:10px">
+          <button class="filter-tab ${_ayKatTab === 'gider' ? 'active' : ''}" data-aytab="gider">▼ Gider</button>
+          <button class="filter-tab ${_ayKatTab === 'gelir' ? 'active' : ''}" data-aytab="gelir">▲ Gelir</button>
+        </div>
+        <div id="ay-kat-list">
+          ${((_ayKatTab === 'gider' ? giderKatlar : gelirKatlar).map(k => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:14px">${k.emoji} ${k.ad}</span>
+              <button class="btn btn-secondary btn-sm ay-kat-edit" data-kat-id="${k.id}" style="padding:4px 10px">✎</button>
+            </div>`).join('') || '<p style="font-size:13px;color:var(--text-secondary)">Bu tipte kategori yok.</p>')}
+        </div>
+      </div>
+
+      <!-- ─── Sabit Giderler ─── -->
+      <div class="card mb-3">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;color:var(--accent)">📋 Sabit Giderler</div>
+          <button class="btn btn-primary btn-sm" id="btnAySgYeni">+ Yeni</button>
+        </div>
+        ${sabitGiderler.length === 0
+          ? `<p style="font-size:13px;color:var(--text-secondary)">Henüz sabit gider yok. Kira, elektrik gibi aylık giderlerinizi ekleyin.</p>`
+          : sabitGiderler.map(sg => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:14px;font-weight:600">${sg.emoji || '💸'} ${sg.ad}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">${sg.varsayilanTutar ? formatTL(sg.varsayilanTutar) : '—'}${sg.odemeGunu ? ` · Ayın ${sg.odemeGunu}. günü` : ''}</div>
+              </div>
+              <button class="btn btn-secondary btn-sm ay-sg-edit" data-sg-id="${sg.id}" style="padding:4px 10px">✎</button>
+            </div>`).join('')}
       </div>
 
       <!-- ─── Dashboard Bugün Kartları (Devre Dışı) ─── -->
@@ -161,6 +203,52 @@ export default {
   afterRender() {
     // ─── Kasalar Yönetimi ──────────────────────────────────────
     document.getElementById('btnAyYeniKasa')?.addEventListener('click', () => showKasaModal(null));
+
+    // ─── Kategoriler Yönetimi ──────────────────────────────────
+    document.getElementById('btnAyYeniKat')?.addEventListener('click', () =>
+      showKategoriModal(null, _ayKatTab)
+    );
+
+    document.querySelectorAll('#ay-kat-tabs .filter-tab[data-aytab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        _ayKatTab = tab.dataset.aytab;
+        document.querySelectorAll('#ay-kat-tabs .filter-tab').forEach(t =>
+          t.classList.toggle('active', t.dataset.aytab === _ayKatTab)
+        );
+        const cats = getKategoriler().filter(k => k.tip === _ayKatTab);
+        const listEl = document.getElementById('ay-kat-list');
+        if (listEl) listEl.innerHTML = cats.length
+          ? cats.map(k => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:14px">${k.emoji} ${k.ad}</span>
+              <button class="btn btn-secondary btn-sm ay-kat-edit" data-kat-id="${k.id}" style="padding:4px 10px">✎</button>
+            </div>`).join('')
+          : '<p style="font-size:13px;color:var(--text-secondary)">Bu tipte kategori yok.</p>';
+        attachKatEditHandlers();
+      });
+    });
+
+    function attachKatEditHandlers() {
+      document.querySelectorAll('.ay-kat-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const kat = getKategoriler().find(k => k.id === btn.dataset.katId);
+          if (kat) showKategoriModal(kat, kat.tip);
+        });
+      });
+    }
+    attachKatEditHandlers();
+
+    // ─── Sabit Giderler ────────────────────────────────────────
+    document.getElementById('btnAySgYeni')?.addEventListener('click', () =>
+      showSabitGiderModal(null, getKategoriler())
+    );
+
+    document.querySelectorAll('.ay-sg-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sg = getSabitGiderler().find(s => s.id === btn.dataset.sgId);
+        if (sg) showSabitGiderModal(sg, getKategoriler());
+      });
+    });
 
     document.querySelectorAll('.ay-kasalar-edit').forEach(btn => {
       btn.addEventListener('click', () => {

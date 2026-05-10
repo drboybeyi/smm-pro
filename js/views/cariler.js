@@ -3,6 +3,95 @@ import { hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki, formatTL, bugun } from
 import { openCariForm } from '../components/cariForm.js';
 import { openCariDetay } from './cariDetay.js';
 
+// ─── Sayfa görünümü (alt nav) ──────────────────────────────────
+
+let _pageFilter = 'tumu';
+
+function buildCariItemHtml(cari, islemler, today) {
+  const bakiye = hesaplaCariBakiye(cari.id, islemler);
+  return `
+    <div class="list-item cari-sayfa-item" data-cari-id="${cari.id}" style="cursor:pointer">
+      <div class="list-item-icon" style="background:var(--bg-secondary);font-size:20px;color:var(--text-primary)">
+        ${tipIcon(cari.tip)}
+      </div>
+      <div class="list-item-body">
+        <div class="list-item-title">${cari.ad}</div>
+        <div class="list-item-subtitle" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span>${tipLabel(cari.tip)}</span>
+          ${vadeChipHtml(cari, today)}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">${bakiyeHtml(bakiye)}</div>
+    </div>`;
+}
+
+function attachSayfaListHandlers() {
+  document.querySelectorAll('#cariSayfa-list .cari-sayfa-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const cari = getCariler().find(c => c.id === item.dataset.cariId);
+      if (cari) openCariDetay(cari);
+    });
+  });
+}
+
+export default {
+  render() {
+    const cariler  = getCariler();
+    const islemler = getIslemler();
+    const today    = bugun();
+    const filtered = _pageFilter === 'tumu' ? cariler : cariler.filter(c => c.tip === _pageFilter);
+
+    const listHtml = filtered.length === 0
+      ? `<div class="placeholder-view">
+           <div class="placeholder-icon">👥</div>
+           <div class="placeholder-text">Henüz cari hesap yok.<br>+ Yeni Cari ile başlayın.</div>
+         </div>`
+      : filtered.map(c => buildCariItemHtml(c, islemler, today)).join('');
+
+    const af = f => _pageFilter === f ? 'active' : '';
+    return `
+      <div class="section-header" style="margin-top:0">
+        <span class="section-title">Cari Hesaplar (${filtered.length})</span>
+        <button class="btn btn-primary btn-sm" id="cariSayfaYeniBtn">+ Yeni</button>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab ${af('tumu')}"      data-pf="tumu">Tümü</button>
+        <button class="filter-tab ${af('tedarikci')}" data-pf="tedarikci">Tedarikçi</button>
+        <button class="filter-tab ${af('personel')}"  data-pf="personel">Personel</button>
+        <button class="filter-tab ${af('musteri')}"   data-pf="musteri">Müşteri</button>
+      </div>
+      <div id="cariSayfa-list">${listHtml}</div>`;
+  },
+
+  afterRender() {
+    document.getElementById('cariSayfaYeniBtn')?.addEventListener('click', () => openCariForm(null));
+
+    document.querySelectorAll('.filter-tab[data-pf]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        _pageFilter = tab.dataset.pf;
+        document.querySelectorAll('.filter-tab[data-pf]').forEach(t =>
+          t.classList.toggle('active', t.dataset.pf === _pageFilter)
+        );
+        const cariler  = getCariler();
+        const islemler = getIslemler();
+        const today    = bugun();
+        const filtered = _pageFilter === 'tumu' ? cariler : cariler.filter(c => c.tip === _pageFilter);
+        const listEl   = document.getElementById('cariSayfa-list');
+        if (!listEl) return;
+        listEl.innerHTML = filtered.length === 0
+          ? `<div class="placeholder-view"><div class="placeholder-icon">👥</div><div class="placeholder-text">Bu tipte cari yok.</div></div>`
+          : filtered.map(c => buildCariItemHtml(c, islemler, today)).join('');
+        attachSayfaListHandlers();
+
+        const titleEl = document.querySelector('.section-title');
+        if (titleEl) titleEl.textContent = `Cari Hesaplar (${filtered.length})`;
+      });
+    });
+
+    attachSayfaListHandlers();
+  }
+};
+
 function tipIcon(tip) {
   if (tip === 'tedarikci') return '💊';
   if (tip === 'personel')  return '👤';

@@ -2,12 +2,14 @@ import { onAuthChange } from './firebase-config.js';
 import {
   setCurrentUser,
   listenIslemler, listenKasalar, listenKategoriler, listenAyarlar, listenCariler, listenVadeler,
+  listenSabitGiderler,
   checkAndCreateDefaults, checkAndCreateDefaultCariler
 } from './db.js';
 import {
   initState,
   getCariler, getVadeler,
   setIslemler, setKasalar, setKategoriler, setAyarlar, setCariler, setVadeler,
+  setSabitGiderler,
   subscribe
 } from './state.js';
 import { bugun, formatTarih } from './utils.js';
@@ -16,23 +18,22 @@ import TakvimView, { openTakvim } from './views/takvim.js';
 import KasaDetay from './views/kasaDetay.js';
 import TumKasalarDetay, { openTumKasalarDetay } from './views/tumKasalarDetay.js';
 import { openCariBorclar } from './views/cariBorclar.js';
-import { openCariler } from './views/cariler.js';
+import CarilerView, { openCariler } from './views/cariler.js';
 import { openCariDetay } from './views/cariDetay.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
-import Dashboard   from './views/dashboard.js';
-import Islemler    from './views/islemler.js';
-import Kategoriler from './views/kategoriler.js';
-import Ayarlar     from './views/ayarlar.js';
+import Dashboard from './views/dashboard.js';
+import Islemler  from './views/islemler.js';
+import Ayarlar   from './views/ayarlar.js';
 
 const VIEWS = {
-  dashboard:   Dashboard,
-  islemler:    Islemler,
-  takvim:      TakvimView,
+  dashboard:       Dashboard,
+  islemler:        Islemler,
+  takvim:          TakvimView,
+  cariler:         CarilerView,
   kasaDetay:       KasaDetay,
   tumKasalarDetay: TumKasalarDetay,
-  kategoriler: Kategoriler,
-  ayarlar:     Ayarlar
+  ayarlar:         Ayarlar
 };
 
 const app       = document.getElementById('app');
@@ -115,13 +116,14 @@ function startApp(user) {
   setSyncStatus('🟢 Bağlı', '#b8f0b8');
   showAppUI();
 
-  const u1 = listenIslemler(liste    => setIslemler(liste));
-  const u2 = listenKasalar(liste     => setKasalar(liste));
-  const u3 = listenKategoriler(liste => setKategoriler(liste));
-  const u4 = listenAyarlar(ayarlar   => setAyarlar(ayarlar));
-  const u5 = listenCariler(liste     => setCariler(liste));
-  const u6 = listenVadeler(liste     => setVadeler(liste));
-  _unsubListeners = [u1, u2, u3, u4, u5, u6];
+  const u1 = listenIslemler(liste      => setIslemler(liste));
+  const u2 = listenKasalar(liste       => setKasalar(liste));
+  const u3 = listenKategoriler(liste   => setKategoriler(liste));
+  const u4 = listenAyarlar(ayarlar     => setAyarlar(ayarlar));
+  const u5 = listenCariler(liste       => setCariler(liste));
+  const u6 = listenVadeler(liste       => setVadeler(liste));
+  const u7 = listenSabitGiderler(liste => setSabitGiderler(liste));
+  _unsubListeners = [u1, u2, u3, u4, u5, u6, u7];
 
   checkAndCreateDefaults(user.uid).catch(console.error);
   checkAndCreateDefaultCariler(user.uid).catch(console.error);
@@ -139,6 +141,7 @@ function stopApp() {
   setKategoriler([]);
   setCariler([]);
   setVadeler([]);
+  setSabitGiderler([]);
   hideAppUI();
   showLogin();
 }
@@ -210,11 +213,12 @@ document.addEventListener('defter:open-cari-detay', e => {
   if (cari) openCariDetay(cari);
 });
 
-subscribe('islemler',     () => { if (_authenticated) navigate(currentView()); });
-subscribe('kasalar',      () => { if (_authenticated) navigate(currentView()); });
-subscribe('kategoriler',  () => { if (_authenticated) navigate(currentView()); });
-subscribe('cariler',      () => { if (_authenticated) navigate(currentView()); });
-subscribe('tarihAraligi', () => { if (_authenticated && currentView() === 'dashboard') navigate('dashboard'); });
+subscribe('islemler',      () => { if (_authenticated) navigate(currentView()); });
+subscribe('kasalar',       () => { if (_authenticated) navigate(currentView()); });
+subscribe('kategoriler',   () => { if (_authenticated) navigate(currentView()); });
+subscribe('cariler',       () => { if (_authenticated) navigate(currentView()); });
+subscribe('sabitGiderler', () => { if (_authenticated) navigate(currentView()); });
+subscribe('tarihAraligi',  () => { if (_authenticated && currentView() === 'dashboard') navigate('dashboard'); });
 subscribe('vadeler', () => {
   if (_authenticated) {
     navigate(currentView());
@@ -240,7 +244,7 @@ window.tumKasalarDetayAc = openTumKasalarDetay;
 hideAppUI();
 window.addEventListener('hashchange', () => {
   if (!_authenticated) return;
-  if (location.hash === '#kasalar') { location.hash = '#ayarlar'; return; }
+  if (location.hash === '#kasalar' || location.hash === '#kategoriler') { location.hash = '#ayarlar'; return; }
   navigate(currentView());
 });
 

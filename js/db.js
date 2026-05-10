@@ -208,6 +208,31 @@ export async function checkAndCreateDefaultCariler(uid) {
   }
 }
 
+// ─── SABİT GİDERLER ───────────────────────────────────────────
+
+export async function addSabitGider(data) {
+  const path   = getUserPath('sabitGiderler');
+  const newRef = push(ref(db, path));
+  const item   = { ...data, id: newRef.key, olusturmaTarihi: Date.now(), aktif: true, silindi: false };
+  await set(newRef, item);
+  return item;
+}
+
+export async function updateSabitGider(id, updates) {
+  await update(ref(db, `${getUserPath('sabitGiderler')}/${id}`), updates);
+}
+
+export function listenSabitGiderler(callback) {
+  const r = ref(db, getUserPath('sabitGiderler'));
+  return onValue(r, snap => {
+    const data  = snap.val() || {};
+    const liste = Object.values(data)
+      .filter(s => !s.silindi)
+      .sort((a, b) => (a.olusturmaTarihi || 0) - (b.olusturmaTarihi || 0));
+    callback(liste);
+  });
+}
+
 // ─── VADELER ──────────────────────────────────────────────────
 
 export async function addVade(vadeData) {

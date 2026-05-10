@@ -1,4 +1,4 @@
-import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getTarihAraligi, setTarihAraligi } from '../state.js';
+import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getSabitGiderler, getTarihAraligi, setTarihAraligi } from '../state.js';
 import {
   formatTL, formatTarih, bugun, gunFarki,
   aralikIcindeMi, islemTipiEtiketi, islemTutarFormati,
@@ -10,6 +10,7 @@ import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
 import { openKasaDetay } from './kasaDetay.js';
+import { renderBuAyOdemeKarti, afterBuAyOdemeKarti } from './buAyOdemeleri.js';
 
 const AYLAR  = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                 'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -53,9 +54,10 @@ function calcMetrics(islemler, baslangic, bitis) {
   return { gelir, gider, net: gelir - gider };
 }
 
-function metricCard(label, value, cls) {
+function metricCard(label, value, cls, action) {
+  const extra = action ? ` metric-card-clickable" data-action="${action}` : '';
   return `
-    <div class="metric-card">
+    <div class="metric-card${extra}">
       <div class="metric-label">${label}</div>
       <div class="metric-value ${cls}">${formatTL(value)}</div>
     </div>`;
@@ -396,9 +398,10 @@ export default {
     const islemler    = getIslemler();
     const kasalar     = getKasalar();
     const kategoriler = getKategoriler();
-    const cariler     = getCariler();
-    const vadeler     = getVadeler();
-    const aralik      = getTarihAraligi();
+    const cariler       = getCariler();
+    const vadeler       = getVadeler();
+    const sabitGiderler = getSabitGiderler();
+    const aralik        = getTarihAraligi();
     const today       = bugun();
 
     const { baslangic, bitis } = aralik;
@@ -417,15 +420,17 @@ export default {
       </div>
 
       <div class="metrics-grid">
-        ${metricCard(`${ayAdi} Gelir`,  ayGelir,      'success')}
-        ${metricCard(`${ayAdi} Gider`,  ayGider,      'danger')}
-        ${metricCard(`${ayAdi} Net`,    ayNet,        ayNet        >= 0 ? 'success' : 'danger')}
-        ${metricCard('Kasalar Bakiye', toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger')}
+        ${metricCard(`${ayAdi} Gelir`,  ayGelir,      'success', 'gelir')}
+        ${metricCard(`${ayAdi} Gider`,  ayGider,      'danger',  'gider')}
+        ${metricCard(`${ayAdi} Net`,    ayNet,        ayNet        >= 0 ? 'success' : 'danger', 'net')}
+        ${metricCard('Kasalar Bakiye', toplamBakiye, toplamBakiye >= 0 ? 'success' : 'danger', 'kasalar')}
       </div>
 
       ${bugunOdeKarti(vadeler, cariler, today)}
 
       ${yaklaşanOdemelerCard(cariler, vadeler, today)}
+
+      ${renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoriler)}
 
       ${bugunBolumu(islemler, today)}
 
@@ -458,6 +463,27 @@ export default {
 
   afterRender() {
     const aralik = getTarihAraligi();
+
+    // ─── Tıklanır metric kartlar ──────────────────────────────
+    document.querySelectorAll('.metric-card-clickable').forEach(card => {
+      card.addEventListener('click', () => {
+        const action = card.dataset.action;
+        if (action === 'gelir') {
+          localStorage.setItem('islemler-filter', 'gelir');
+          location.hash = '#islemler';
+        } else if (action === 'gider') {
+          localStorage.setItem('islemler-filter', 'gider');
+          location.hash = '#islemler';
+        } else if (action === 'net') {
+          openAyOzet();
+        } else if (action === 'kasalar') {
+          window.tumKasalarDetayAc?.();
+        }
+      });
+    });
+
+    // ─── Bu Ay Ödemelerim butonları ───────────────────────────
+    afterBuAyOdemeKarti(getCariler(), getSabitGiderler());
 
     document.getElementById('dashAyGeri')?.addEventListener('click', () => {
       setTarihAraligi(oncekiAy(getTarihAraligi().baslangic));

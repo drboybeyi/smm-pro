@@ -48,6 +48,13 @@ export function openCariForm(cariToEdit = null) {
           <input class="form-control" id="cf-notlar" type="text" maxlength="200"
             placeholder="Not..." value="${cariToEdit?.notlar || ''}">
         </div>
+        <div class="form-group" id="cf-brut-group" style="display:none">
+          <label class="form-label">Sabit Brüt Maaş <span class="form-label-opt">(isteğe bağlı)</span></label>
+          <input class="form-control" id="cf-brut" type="number"
+            step="0.01" min="0" inputmode="decimal" placeholder="Aylık brüt maaş..."
+            value="${cariToEdit?.sabitBrutMaas || ''}">
+          <p style="font-size:11px;color:var(--text-secondary);margin-top:3px">Doldurulursa "Bu Ay Ödemelerim" kartında görünür</p>
+        </div>
         <div class="form-group" id="cf-vade-group" style="display:none">
           <label class="form-label" style="margin-bottom:8px">Ödeme Vadesi</label>
           <div class="cf-vade-radios">
@@ -85,8 +92,8 @@ export function openCariForm(cariToEdit = null) {
     overlay.querySelectorAll('.cf-tip-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.val === tip)
     );
-    overlay.querySelector('#cf-vade-group').style.display =
-      tip === 'tedarikci' ? '' : 'none';
+    overlay.querySelector('#cf-brut-group').style.display  = tip === 'personel'  ? '' : 'none';
+    overlay.querySelector('#cf-vade-group').style.display  = tip === 'tedarikci' ? '' : 'none';
   }
 
   overlay.querySelectorAll('.cf-tip-btn').forEach(btn => {
@@ -129,7 +136,13 @@ export function openCariForm(cariToEdit = null) {
       return;
     }
 
+    const brutVal = parseFloat(overlay.querySelector('#cf-brut')?.value);
     const data = { ad, tip: selectedTip, telefon, notlar };
+    if (selectedTip === 'personel' && !isNaN(brutVal) && brutVal > 0) {
+      data.sabitBrutMaas = brutVal;
+    } else {
+      data.sabitBrutMaas = null;
+    }
     if (selectedTip === 'tedarikci') {
       data.vadeTipi = vadeTip;
       if (vadeTip === 'her_ay') data.vadeGunu  = vadeGun;

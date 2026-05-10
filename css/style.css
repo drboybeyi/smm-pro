@@ -2904,6 +2904,95 @@ select.form-control {
   border: 1px solid #e8c0b8;
 }
 
+/* === FAZ 4.17 — METRIC KART TIKLANABİLİR === */
+
+.metric-card-clickable {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.08);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.metric-card-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.metric-card-clickable:active {
+  transform: translateY(0);
+}
+
+/* === BU AY ÖDEMELERİM KARTI === */
+
+.bay-kart {
+  border-left: 3px solid var(--accent);
+}
+
+.bay-section-baslik {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  padding: 4px 0 6px;
+}
+
+.bay-section-separator {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.bay-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.bay-satir:last-of-type {
+  border-bottom: none;
+}
+
+.bay-satir-sol {
+  flex: 1;
+  min-width: 0;
+}
+
+.bay-satir-ad {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bay-satir-detay {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.bay-gun {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bay-toplam {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 2px;
+  margin-top: 6px;
+  border-top: 2px solid var(--accent);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.bay-toplam strong {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
 .cb-vade-uzak {
   color: var(--text-secondary);
 }

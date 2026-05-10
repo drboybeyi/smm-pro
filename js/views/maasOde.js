@@ -42,7 +42,8 @@ export function openMaasOde(cari) {
         <div class="form-group">
           <label class="form-label">Brüt Maaş <span class="req">*</span></label>
           <input class="form-control" id="mo-brut" type="number"
-            step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off">
+            step="0.01" min="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off"
+            value="${cari.sabitBrutMaas || ''}">
         </div>
         ${avansVar ? `
         <div class="maas-avans-satir">
@@ -207,5 +208,6 @@ export function openMaasOde(cari) {
     }
   });
 
+  guncelle();
   setTimeout(() => overlay.querySelector('#mo-brut')?.focus(), 80);
 }
