@@ -12,7 +12,7 @@ import {
   setSabitGiderler,
   subscribe
 } from './state.js';
-import { bugun, formatTarih } from './utils.js';
+import { bugun, formatTarih, temizleEskiOdendiIsaretleri } from './utils.js';
 import { openIslemForm } from './components/islemForm.js';
 import TakvimView, { openTakvim } from './views/takvim.js';
 import KasaDetay from './views/kasaDetay.js';
@@ -240,6 +240,7 @@ if ('serviceWorker' in navigator && location.hostname !== 'localhost' && locatio
 
 initState();
 setHeaderDate();
+temizleEskiOdendiIsaretleri();
 window.tumKasalarDetayAc = openTumKasalarDetay;
 hideAppUI();
 window.addEventListener('hashchange', () => {

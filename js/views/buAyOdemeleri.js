@@ -1,5 +1,5 @@
-import { getKasalar, getKategoriler } from '../state.js';
-import { hesaplaCariBakiye, formatTL, bugun } from '../utils.js';
+import { getKasalar, getKategoriler, getIslemler, getCariler, getSabitGiderler } from '../state.js';
+import { hesaplaCariBakiye, formatTL, bugun, odendiIsaretle, odendiKontrol } from '../utils.js';
 import { addIslem, updateSabitGider } from '../db.js';
 import { show as showToast } from '../components/toast.js';
 import { openMaasOde } from './maasOde.js';
@@ -18,6 +18,8 @@ function getMaasKatIds(kategoriler) {
 }
 
 function maasOdenmiMi(cari, ayStr, islemler, kategoriler) {
+  const [yStr, mStr] = ayStr.split('-');
+  if (odendiKontrol('personel', cari.id, parseInt(yStr), parseInt(mStr))) return true;
   const katIds = getMaasKatIds(kategoriler);
   return islemler.some(i => {
     if (!i.tarih?.startsWith(ayStr)) return false;
@@ -29,6 +31,8 @@ function maasOdenmiMi(cari, ayStr, islemler, kategoriler) {
 }
 
 function sabitGiderOdenmiMi(sg, ayStr, islemler) {
+  const [yStr, mStr] = ayStr.split('-');
+  if (odendiKontrol('sabit', sg.id, parseInt(yStr), parseInt(mStr))) return true;
   return islemler.some(i =>
     i.tarih?.startsWith(ayStr) &&
     i.tip === 'gider' &&
@@ -54,7 +58,9 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
     .filter(sg => sg.aktif !== false && !sg.silindi)
     .filter(sg => !sabitGiderOdenmiMi(sg, ayStr, islemler));
 
-  if (bekleyenMaaslar.length === 0 && bekleyenSabitler.length === 0) return '';
+  if (bekleyenMaaslar.length === 0 && bekleyenSabitler.length === 0) {
+    return '<div id="bay-karti-wrap"></div>';
+  }
 
   let toplam = 0;
   bekleyenMaaslar.forEach(p => { if (p.net !== null) toplam += p.net; });
@@ -75,8 +81,11 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
               : 'Brüt maaş belirtilmedi'
           }</div>
         </div>
-        <button class="btn btn-sm btn-primary bay-ode-btn"
-          data-type="maas" data-id="${p.id}">Öde →</button>
+        <div class="bay-satir-butonlar">
+          <button class="odendi-isaretle-btn" data-type="maas" data-id="${p.id}">✓ Ödendi</button>
+          <button class="btn btn-sm btn-primary bay-ode-btn"
+            data-type="maas" data-id="${p.id}">Öde →</button>
+        </div>
       </div>`).join('')}
   ` : '';
 
@@ -88,8 +97,11 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
           <div class="bay-satir-ad">${sg.emoji || '💸'} ${sg.ad}${sg.odemeGunu ? ` <span class="bay-gun">(${sg.odemeGunu}'i)</span>` : ''}</div>
           <div class="bay-satir-detay">${sg.varsayilanTutar ? `~${formatTL(sg.varsayilanTutar)}` : 'Tutar belirtilmedi'}</div>
         </div>
-        <button class="btn btn-sm btn-secondary bay-ode-btn"
-          data-type="sabit" data-id="${sg.id}">Öde →</button>
+        <div class="bay-satir-butonlar">
+          <button class="odendi-isaretle-btn" data-type="sabit" data-id="${sg.id}">✓ Ödendi</button>
+          <button class="btn btn-sm btn-secondary bay-ode-btn"
+            data-type="sabit" data-id="${sg.id}">Öde →</button>
+        </div>
       </div>`).join('')}
   ` : '';
 
@@ -100,12 +112,30 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
     </div>` : '';
 
   return `
-    <div class="section-header">
-      <span class="section-title">📅 BU AY ÖDEMELERİM</span>
-    </div>
-    <div class="card mb-3 bay-kart" style="padding:12px 16px">
-      ${maaslarHtml}${sabitlerHtml}${toplamHtml}
+    <div id="bay-karti-wrap">
+      <div class="section-header">
+        <span class="section-title">📅 BU AY ÖDEMELERİM</span>
+      </div>
+      <div class="card mb-3 bay-kart" style="padding:12px 16px">
+        ${maaslarHtml}${sabitlerHtml}${toplamHtml}
+      </div>
     </div>`;
+}
+
+function rebuildBuAyKarti() {
+  const wrap = document.getElementById('bay-karti-wrap');
+  if (!wrap) return;
+  const cariler       = getCariler();
+  const sabitGiderler = getSabitGiderler();
+  const islemler      = getIslemler();
+  const kategoriler   = getKategoriler();
+  const temp = document.createElement('div');
+  temp.innerHTML = renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoriler);
+  const newWrap = temp.querySelector('#bay-karti-wrap');
+  if (newWrap) {
+    wrap.replaceWith(newWrap);
+    afterBuAyOdemeKarti(cariler, sabitGiderler);
+  }
 }
 
 export function afterBuAyOdemeKarti(cariler, sabitGiderler) {
@@ -120,6 +150,24 @@ export function afterBuAyOdemeKarti(cariler, sabitGiderler) {
         const sg = sabitGiderler.find(s => s.id === id);
         if (sg) openSabitGiderOdeFormu(sg);
       }
+    });
+  });
+
+  document.querySelectorAll('.odendi-isaretle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type;
+      const id   = btn.dataset.id;
+      const today = bugun();
+      const [yStr, mStr] = today.split('-');
+      const yil = parseInt(yStr);
+      const ay  = parseInt(mStr);
+      const ad = type === 'maas'
+        ? (cariler.find(c => c.id === id)?.ad || 'Bu kayıt')
+        : (sabitGiderler.find(s => s.id === id)?.ad || 'Bu kayıt');
+      if (!confirm(`"${ad}" bu ay için ödendi olarak işaretlensin mi?`)) return;
+      odendiIsaretle(type === 'maas' ? 'personel' : 'sabit', id, yil, ay);
+      rebuildBuAyKarti();
+      showToast(`${ad} ödendi olarak işaretlendi`, 'success');
     });
   });
 }

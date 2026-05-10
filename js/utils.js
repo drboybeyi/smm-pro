@@ -641,3 +641,33 @@ export function tumZamanlarOzet(islemler, kasalar, kategoriler) {
     topGiderKat: mapToKat(giderKatMap)
   };
 }
+
+// ─── Ödendi İşaretleme ───────────────────────────────────────
+
+export function odendiIsaretle(tip, id, yil, ay) {
+  const key = `odendi-${tip}-${id}-${yil}-${String(ay).padStart(2, '0')}`;
+  try { localStorage.setItem(key, '1'); } catch {}
+}
+
+export function odendiKontrol(tip, id, yil, ay) {
+  const key = `odendi-${tip}-${id}-${yil}-${String(ay).padStart(2, '0')}`;
+  try { return localStorage.getItem(key) === '1'; } catch { return false; }
+}
+
+export function temizleEskiOdendiIsaretleri() {
+  try {
+    const now = new Date();
+    const sinirDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+    const sinirStr = `${sinirDate.getFullYear()}-${String(sinirDate.getMonth() + 1).padStart(2, '0')}`;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('odendi-')) continue;
+      const parts = key.split('-');
+      if (parts.length < 4) continue;
+      const ayStr = `${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+      if (ayStr < sinirStr) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch {}
+}
