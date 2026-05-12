@@ -14,6 +14,20 @@
   --shadow:        rgba(61, 40, 23, 0.1);
   --header-h:      56px;
   --nav-h:         64px;
+
+  /* Vade renk skalası */
+  --vade-gecmis-bg: #fce8e8;
+  --vade-gecmis-cl: #9a4a3a;
+  --vade-bugun-bg:  #fce0e0;
+  --vade-bugun-cl:  #7a2a1a;
+  --vade-1-bg:      #fef0e2;
+  --vade-1-cl:      #a05010;
+  --vade-3-bg:      #fef6d6;
+  --vade-3-cl:      #8a6200;
+  --vade-7-bg:      #fefce8;
+  --vade-7-cl:      #7a6a00;
+  --vade-30-bg:     #f0f7ec;
+  --vade-30-cl:     #4a7a2a;
 }
 
 /* Reset */
@@ -3574,3 +3588,26 @@ select.form-control {
 .tkd-dagilim-satir:hover {
   background: var(--bg-secondary);
 }
+
+/* ─── Faz 4.20: Vade Renk Skalası ──────────────────────────── */
+
+.vade-gecmis { border-left: 4px solid var(--vade-gecmis-cl); background: var(--vade-gecmis-bg); }
+.vade-bugun  { border-left: 4px solid var(--vade-bugun-cl);  background: var(--vade-bugun-bg);  }
+.vade-1      { border-left: 4px solid var(--vade-1-cl);      background: var(--vade-1-bg);      }
+.vade-3      { border-left: 4px solid var(--vade-3-cl);      background: var(--vade-3-bg);      }
+.vade-7      { border-left: 4px solid var(--vade-7-cl);      background: var(--vade-7-bg);      }
+.vade-30     { border-left: 4px solid var(--vade-30-cl);     background: var(--vade-30-bg);     }
+
+/* Cal-cell: sadece arka plan tonu, sol kenarlık kaldırılır */
+.cal-cell.vade-gecmis,
+.cal-cell.vade-bugun,
+.cal-cell.vade-1,
+.cal-cell.vade-3,
+.cal-cell.vade-7,
+.cal-cell.vade-30 { border-left: none !important; }
+.cal-cell.vade-gecmis { background: var(--vade-gecmis-bg) !important; }
+.cal-cell.vade-bugun  { background: var(--vade-bugun-bg)  !important; }
+.cal-cell.vade-1      { background: var(--vade-1-bg)      !important; }
+.cal-cell.vade-3      { background: var(--vade-3-bg)      !important; }
+.cal-cell.vade-7      { background: var(--vade-7-bg)      !important; }
+.cal-cell.vade-30     { background: var(--vade-30-bg)     !important; }

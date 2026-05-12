@@ -2,7 +2,7 @@ import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getSab
 import {
   formatTL, formatTarih, bugun, gunFarki,
   aralikIcindeMi, islemTipiEtiketi, islemTutarFormati,
-  kisaltilmisRakam, bugunOzet, bugunKasaDagilim
+  kisaltilmisRakam, bugunOzet, bugunKasaDagilim, vadeRengiSinifi
 } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
@@ -306,13 +306,13 @@ function yaklaşanOdemelerCard(cariler, vadeler, today) {
   const inner = yaklaşanlar.length === 0
     ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">✓ Yaklaşan ödeme yok</p>`
     : yaklaşanlar.map(({ cari, vade, fark }) => {
-        const renk = fark === 1 ? 'var(--danger)' : fark <= 3 ? 'var(--warning)' : 'var(--text-secondary)';
+        const sinif = vadeRengiSinifi(vade.vadeTarih);
         return `
-          <div class="dash-vade-row" data-cari-id="${cari.id}"
-               style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+          <div class="dash-vade-row${sinif ? ' ' + sinif : ''}" data-cari-id="${cari.id}"
+               style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer">
             <div>
               <div style="font-size:14px;font-weight:600">${cari.ad}</div>
-              <div style="font-size:12px;color:${renk}">${fark} gün sonra · ${formatTarih(vade.vadeTarih)}</div>
+              <div style="font-size:12px">${fark === 0 ? 'Bugün ödeme!' : fark + ' gün sonra'} · ${formatTarih(vade.vadeTarih)}</div>
             </div>
             <span style="font-size:14px;font-weight:700;color:var(--danger)">${formatTL(vade.tutar)}</span>
           </div>`;

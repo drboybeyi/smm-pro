@@ -1,7 +1,7 @@
 import { getCariler, getIslemler, getVadeler } from '../state.js';
 import {
   hesaplaCariBakiye, formatTL, formatTarih, bugun,
-  tedarikciBorclari, cariEnYakinVade, borcSiraOnceligi
+  tedarikciBorclari, cariEnYakinVade, borcSiraOnceligi, vadeRengiSinifi
 } from '../utils.js';
 
 function vadeMetni(yakinVade) {
@@ -60,15 +60,17 @@ export function openCariBorclar() {
          <div class="cb-bos-baslik">Cari borcunuz yok</div>
          <div class="cb-bos-alt">Tüm tedarikçilere ödeme yapılmış</div>
        </div>`
-    : borcluCariler.map(c => `
-        <div class="cb-satir" data-cari-id="${c.id}">
+    : borcluCariler.map(c => {
+        const vadeSinif = vadeRengiSinifi(c.yakinVade?.vadeTarih);
+        return `
+        <div class="cb-satir${vadeSinif ? ' ' + vadeSinif : ''}" data-cari-id="${c.id}">
           <div class="cb-satir-ust">
             <span class="cb-cari-ad">💊 ${c.ad}</span>
             <span class="cb-cari-borc">${formatTL(c.bakiye)}</span>
           </div>
           <div class="cb-satir-alt">${vadeMetni(c.yakinVade)}</div>
-        </div>`
-      ).join('');
+        </div>`;
+      }).join('');
 
   const modal = document.createElement('div');
   modal.id = 'cari-borclar-modal';

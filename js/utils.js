@@ -753,3 +753,34 @@ export function banaBorcluOlanlar(cariler, islemler) {
 
   return { musteriler, personel, toplam };
 }
+
+// ─── Vade Renk Skalası ────────────────────────────────────────
+
+export function vadeRengiSinifi(vadeTarihStr) {
+  if (!vadeTarihStr) return '';
+  const fark = gunFarki(vadeTarihStr, bugun());
+  if (!isFinite(fark)) return '';
+  if (fark < 0)   return 'vade-gecmis';
+  if (fark === 0) return 'vade-bugun';
+  if (fark === 1) return 'vade-1';
+  if (fark <= 3)  return 'vade-3';
+  if (fark <= 7)  return 'vade-7';
+  if (fark <= 30) return 'vade-30';
+  return '';
+}
+
+export function sabitGiderSonrakiOdeme(odemeGunu) {
+  if (!odemeGunu || odemeGunu < 1 || odemeGunu > 31) return null;
+  const today = bugun();
+  const [y, m, d] = today.split('-').map(Number);
+  if (d < odemeGunu) {
+    const maxDay = new Date(y, m, 0).getDate();
+    const gun    = Math.min(odemeGunu, maxDay);
+    return `${y}-${String(m).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+  }
+  const nextM  = m === 12 ? 1 : m + 1;
+  const nextY  = m === 12 ? y + 1 : y;
+  const maxDay = new Date(nextY, nextM, 0).getDate();
+  const gun    = Math.min(odemeGunu, maxDay);
+  return `${nextY}-${String(nextM).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+}

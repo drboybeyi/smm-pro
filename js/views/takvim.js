@@ -1,7 +1,7 @@
 import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler } from '../state.js';
 import {
   formatTL, formatTarih, kisaltilmisRakam, gunKasaOzeti,
-  islemKasaHarekedinSayilirMi
+  islemKasaHarekedinSayilirMi, vadeRengiSinifi
 } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 import { openAyOzet } from './ayOzet.js';
@@ -88,8 +88,9 @@ function buildGrid(islemler, vadeler) {
       vadeHtml = `<span class="cal-vade-tutar" style="color:${vRenk}">💸${kisaltilmisRakam(vadeToplam)}</span>`;
     }
 
+    const vadeSinif = hasVade ? vadeRengiSinifi(dateStr) : '';
     cells += `
-      <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}"
+      <div class="cal-cell${isToday ? ' cal-today' : ''}${hasData ? ' cal-has-data' : ''}${isToday && hasVade ? ' cal-today-vade-pulse' : ''}${vadeSinif ? ' ' + vadeSinif : ''}"
            data-date="${dateStr}">
         <span class="cal-day-num">${d}</span>
         ${gelirHtml}
