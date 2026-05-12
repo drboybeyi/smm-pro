@@ -1,11 +1,42 @@
 import { getCariler, getIslemler, subscribe } from '../state.js';
-import { hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki, formatTL, bugun } from '../utils.js';
+import {
+  hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki,
+  formatTL, bugun, cariListesiSirala
+} from '../utils.js';
 import { openCariForm } from '../components/cariForm.js';
 import { openCariDetay } from './cariDetay.js';
 
 // ─── Sayfa görünümü (alt nav) ──────────────────────────────────
 
 let _pageFilter = 'tumu';
+let _siralama   = (() => { try { return localStorage.getItem('cari-siralama') || 'bakiye-buyuk'; } catch { return 'bakiye-buyuk'; } })();
+
+const SIRALAMA_OPTS = [
+  { val: 'bakiye-buyuk',   label: 'Bakiye (büyük → küçük)' },
+  { val: 'bakiye-kucuk',   label: 'Bakiye (küçük → büyük)' },
+  { val: 'son-islem-yeni', label: 'Son işlem (yeni → eski)' },
+  { val: 'son-islem-eski', label: 'Son işlem (eski → yeni)' },
+  { val: 'isim-az',        label: 'İsme göre (A → Z)'       },
+  { val: 'isim-za',        label: 'İsme göre (Z → A)'       },
+];
+
+function getFilteredSorted() {
+  const cariler  = getCariler();
+  const islemler = getIslemler();
+  const base     = _pageFilter === 'tumu' ? cariler : cariler.filter(c => c.tip === _pageFilter);
+  return cariListesiSirala(base, islemler, _siralama);
+}
+
+function buildSiralamaDropdown() {
+  const opts = SIRALAMA_OPTS.map(o =>
+    `<option value="${o.val}"${_siralama === o.val ? ' selected' : ''}>${o.label}</option>`
+  ).join('');
+  return `
+    <div class="cari-siralama-wrap">
+      <label class="cari-siralama-label">Sıralama:</label>
+      <select class="cari-siralama-select" id="cariSiralama">${opts}</select>
+    </div>`;
+}
 
 function buildCariItemHtml(cari, islemler, today) {
   const bakiye = hesaplaCariBakiye(cari.id, islemler);
@@ -36,24 +67,24 @@ function attachSayfaListHandlers() {
 
 export default {
   render() {
-    const cariler  = getCariler();
     const islemler = getIslemler();
     const today    = bugun();
-    const filtered = _pageFilter === 'tumu' ? cariler : cariler.filter(c => c.tip === _pageFilter);
+    const sorted   = getFilteredSorted();
+    const af       = f => _pageFilter === f ? 'active' : '';
 
-    const listHtml = filtered.length === 0
+    const listHtml = sorted.length === 0
       ? `<div class="placeholder-view">
            <div class="placeholder-icon">👥</div>
            <div class="placeholder-text">Henüz cari hesap yok.<br>+ Yeni Cari ile başlayın.</div>
          </div>`
-      : filtered.map(c => buildCariItemHtml(c, islemler, today)).join('');
+      : sorted.map(c => buildCariItemHtml(c, islemler, today)).join('');
 
-    const af = f => _pageFilter === f ? 'active' : '';
     return `
       <div class="section-header" style="margin-top:0">
-        <span class="section-title">Cari Hesaplar (${filtered.length})</span>
+        <span class="section-title">Cari Hesaplar (${sorted.length})</span>
         <button class="btn btn-primary btn-sm" id="cariSayfaYeniBtn">+ Yeni</button>
       </div>
+      ${buildSiralamaDropdown()}
       <div class="filter-tabs">
         <button class="filter-tab ${af('tumu')}"      data-pf="tumu">Tümü</button>
         <button class="filter-tab ${af('tedarikci')}" data-pf="tedarikci">Tedarikçi</button>
@@ -66,25 +97,33 @@ export default {
   afterRender() {
     document.getElementById('cariSayfaYeniBtn')?.addEventListener('click', () => openCariForm(null));
 
+    function refreshList() {
+      const islemler = getIslemler();
+      const today    = bugun();
+      const sorted   = getFilteredSorted();
+      const listEl   = document.getElementById('cariSayfa-list');
+      if (!listEl) return;
+      listEl.innerHTML = sorted.length === 0
+        ? `<div class="placeholder-view"><div class="placeholder-icon">👥</div><div class="placeholder-text">Bu tipte cari yok.</div></div>`
+        : sorted.map(c => buildCariItemHtml(c, islemler, today)).join('');
+      attachSayfaListHandlers();
+      const titleEl = document.querySelector('.section-title');
+      if (titleEl) titleEl.textContent = `Cari Hesaplar (${sorted.length})`;
+    }
+
+    document.getElementById('cariSiralama')?.addEventListener('change', e => {
+      _siralama = e.target.value;
+      try { localStorage.setItem('cari-siralama', _siralama); } catch {}
+      refreshList();
+    });
+
     document.querySelectorAll('.filter-tab[data-pf]').forEach(tab => {
       tab.addEventListener('click', () => {
         _pageFilter = tab.dataset.pf;
         document.querySelectorAll('.filter-tab[data-pf]').forEach(t =>
           t.classList.toggle('active', t.dataset.pf === _pageFilter)
         );
-        const cariler  = getCariler();
-        const islemler = getIslemler();
-        const today    = bugun();
-        const filtered = _pageFilter === 'tumu' ? cariler : cariler.filter(c => c.tip === _pageFilter);
-        const listEl   = document.getElementById('cariSayfa-list');
-        if (!listEl) return;
-        listEl.innerHTML = filtered.length === 0
-          ? `<div class="placeholder-view"><div class="placeholder-icon">👥</div><div class="placeholder-text">Bu tipte cari yok.</div></div>`
-          : filtered.map(c => buildCariItemHtml(c, islemler, today)).join('');
-        attachSayfaListHandlers();
-
-        const titleEl = document.querySelector('.section-title');
-        if (titleEl) titleEl.textContent = `Cari Hesaplar (${filtered.length})`;
+        refreshList();
       });
     });
 

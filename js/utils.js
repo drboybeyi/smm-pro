@@ -671,3 +671,85 @@ export function temizleEskiOdendiIsaretleri() {
     keysToRemove.forEach(k => localStorage.removeItem(k));
   } catch {}
 }
+
+// ─── Cari Hareket Filtreleme ──────────────────────────────────
+
+export function cariHareketleriFiltrele(islemler, cariId, arama, tarihFiltre, tipFiltre) {
+  let liste = islemler.filter(i => i.cariId === cariId);
+
+  if (tarihFiltre !== 'tumu') {
+    const today = bugun();
+    const [y, m] = today.split('-').map(Number);
+    if (tarihFiltre === 'bu-ay') {
+      const ayStr = `${y}-${String(m).padStart(2, '0')}`;
+      liste = liste.filter(i => i.tarih?.startsWith(ayStr));
+    } else if (tarihFiltre === 'bu-yil') {
+      liste = liste.filter(i => i.tarih?.startsWith(String(y)));
+    }
+  }
+
+  if (tipFiltre !== 'tumu') {
+    if (tipFiltre === 'borc') {
+      liste = liste.filter(i => i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar');
+    } else if (tipFiltre === 'odeme') {
+      liste = liste.filter(i => i.cariEtkisi === 'odeme');
+    } else if (tipFiltre === 'tahsilat') {
+      liste = liste.filter(i => i.cariEtkisi === 'tahsilat' || i.cariEtkisi === 'avans_ver');
+    }
+  }
+
+  if (arama) {
+    const q = arama.toLowerCase();
+    liste = liste.filter(i =>
+      i.aciklama?.toLowerCase().includes(q) ||
+      String(i.tutar ?? '').includes(q) ||
+      formatTarih(i.tarih).toLowerCase().includes(q)
+    );
+  }
+
+  return liste;
+}
+
+// ─── Cari Liste Sıralama ──────────────────────────────────────
+
+export function cariListesiSirala(cariler, islemler, siralama) {
+  const withData = cariler.map(c => {
+    const bakiye   = hesaplaCariBakiye(c.id, islemler);
+    const sonIslem = islemler
+      .filter(i => i.cariId === c.id && i.tarih)
+      .reduce((max, i) => (i.tarih > max ? i.tarih : max), '');
+    return { ...c, _bakiye: bakiye, _sonIslem: sonIslem };
+  });
+
+  switch (siralama) {
+    case 'bakiye-buyuk':   return withData.sort((a, b) => Math.abs(b._bakiye) - Math.abs(a._bakiye));
+    case 'bakiye-kucuk':   return withData.sort((a, b) => Math.abs(a._bakiye) - Math.abs(b._bakiye));
+    case 'son-islem-yeni': return withData.sort((a, b) => b._sonIslem.localeCompare(a._sonIslem));
+    case 'son-islem-eski': return withData.sort((a, b) => a._sonIslem.localeCompare(b._sonIslem));
+    case 'isim-az':        return withData.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+    case 'isim-za':        return withData.sort((a, b) => b.ad.localeCompare(a.ad, 'tr'));
+    default:               return withData;
+  }
+}
+
+// ─── Bana Borçlu Olanlar ──────────────────────────────────────
+
+export function banaBorcluOlanlar(cariler, islemler) {
+  const pozitifler = cariler
+    .filter(c => !c.silindi && (c.tip === 'musteri' || c.tip === 'personel'))
+    .map(c => {
+      const bakiye   = hesaplaCariBakiye(c.id, islemler);
+      const sonIslem = islemler
+        .filter(i => i.cariId === c.id && i.tarih)
+        .reduce((max, i) => (i.tarih > max ? i.tarih : max), '');
+      return { ...c, bakiye, sonIslem };
+    })
+    .filter(c => c.bakiye > 0.01)
+    .sort((a, b) => b.bakiye - a.bakiye);
+
+  const musteriler = pozitifler.filter(c => c.tip === 'musteri');
+  const personel   = pozitifler.filter(c => c.tip === 'personel');
+  const toplam     = pozitifler.reduce((s, c) => s + c.bakiye, 0);
+
+  return { musteriler, personel, toplam };
+}

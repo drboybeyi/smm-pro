@@ -18,6 +18,7 @@ import TakvimView, { openTakvim } from './views/takvim.js';
 import KasaDetay from './views/kasaDetay.js';
 import TumKasalarDetay, { openTumKasalarDetay } from './views/tumKasalarDetay.js';
 import { openCariBorclar } from './views/cariBorclar.js';
+import { openBanaBorcluOlanlar } from './views/banaBorcluOlanlar.js';
 import CarilerView, { openCariler } from './views/cariler.js';
 import { openCariDetay } from './views/cariDetay.js';
 import { show as showToast } from './components/toast.js';
@@ -162,6 +163,7 @@ function showFabSheet() {
       <button class="fab-sheet-btn fab-transfer" id="fab-transfer">🔄 Transfer</button>
       <button class="fab-sheet-btn fab-cari"      id="fab-cari">👥 Cari İşlem</button>
       <button class="fab-sheet-btn fab-borclar"  id="fab-borclar">💸 Cari Borçlarım</button>
+      <button class="fab-sheet-btn fab-borclu"   id="fab-borclu">💰 Bana Borçlu Olanlar</button>
       <button class="fab-sheet-btn fab-takvim"   id="fab-takvim">📅 Takvim Görünümü</button>
       <button class="fab-sheet-btn fab-iptal"    id="fab-iptal">İptal</button>
     </div>`;
@@ -179,7 +181,8 @@ function showFabSheet() {
   document.getElementById('fab-gider')?.addEventListener('click',    () => { close(); setTimeout(() => openIslemForm('gider'),    220); });
   document.getElementById('fab-transfer')?.addEventListener('click', () => { close(); setTimeout(() => openIslemForm('transfer'), 220); });
   document.getElementById('fab-cari')?.addEventListener('click',     () => { close(); setTimeout(() => openCariler(),             220); });
-  document.getElementById('fab-borclar')?.addEventListener('click',  () => { close(); setTimeout(() => openCariBorclar(),          220); });
+  document.getElementById('fab-borclar')?.addEventListener('click',  () => { close(); setTimeout(() => openCariBorclar(),           220); });
+  document.getElementById('fab-borclu')?.addEventListener('click',   () => { close(); setTimeout(() => openBanaBorcluOlanlar(),   220); });
   document.getElementById('fab-takvim')?.addEventListener('click',   () => { close(); setTimeout(() => { location.hash = '#takvim'; }, 220); });
   document.getElementById('fab-iptal')?.addEventListener('click', close);
 }

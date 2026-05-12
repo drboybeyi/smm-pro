@@ -1,7 +1,7 @@
 import { getCariler, getIslemler, getKasalar, getKategoriler, getVadeler, subscribe } from '../state.js';
 import {
   hesaplaCariBakiye, hesaplaSonrakiVade, gunFarki,
-  formatTL, formatTarih, bugun
+  formatTL, formatTarih, bugun, cariHareketleriFiltrele
 } from '../utils.js';
 import { updateCari, addIslem, vadeleriOdendiYap } from '../db.js';
 import { show as showToast } from '../components/toast.js';
@@ -54,8 +54,8 @@ function vadeCardCari(cari, bugunStr) {
   if (!vade) return '';
   const fark = gunFarki(vade, bugunStr);
   if (fark < 0) return '';
-  const acil   = fark <= 7;
-  const text   = fark === 0 ? 'Bugün!' : `${fark} gün sonra`;
+  const acil    = fark <= 7;
+  const text    = fark === 0 ? 'Bugün!' : `${fark} gün sonra`;
   const periyot = cari.vadeTipi === 'her_ay'
     ? `Her ayın ${cari.vadeGunu}. günü`
     : formatTarih(cari.vadeTarih);
@@ -117,7 +117,7 @@ function vadeSection(cariId, vadeler, today, bakiye) {
         let satirCls = '';
         if (v.durum === 'bekliyor') {
           const fark = gunFarki(v.vadeTarih, today);
-          if (fark < 0)   satirCls = ' vade-satir-gecmis';
+          if (fark < 0)        satirCls = ' vade-satir-gecmis';
           else if (fark === 0) satirCls = ' vade-satir-bugun';
           else if (fark <= 3)  satirCls = ' vade-satir-yakin';
         }
@@ -147,11 +147,32 @@ function vadeSection(cariId, vadeler, today, bakiye) {
     <div id="cd-vadeler">${listHtml}</div>`;
 }
 
+function hareketItemHtml(h, kasalar) {
+  const kasa    = kasalar.find(k => k.id === h.kasaId);
+  const label   = ETKI_LABEL[h.cariEtkisi] || h.cariEtkisi;
+  const tutar   = h.tutar || 0;
+  const isGelir = h.tip === 'gelir';
+  const cls     = isGelir ? 'income' : 'expense';
+  const prefix  = isGelir ? '+' : '-';
+  return `
+    <div class="list-item hareket-item" data-islem-id="${h.id}" style="cursor:pointer">
+      <div class="list-item-body">
+        <div class="list-item-title">${label}${h.aciklama ? ' · ' + h.aciklama : ''}</div>
+        <div class="list-item-subtitle">${formatTarih(h.tarih)}${kasa ? ' · ' + kasa.ad : ''}</div>
+      </div>
+      <div class="list-item-amount ${cls}">${prefix}${formatTL(tutar)}</div>
+    </div>`;
+}
+
 export function openCariDetay(cariInput) {
   if (document.getElementById('cari-detay-overlay')) return;
 
   const cariId = cariInput.id;
   let cari     = cariInput;
+
+  let _arama       = '';
+  let _tarihFiltre = 'tumu';
+  let _tipFiltre   = 'tumu';
 
   const overlay = document.createElement('div');
   overlay.id = 'cari-detay-overlay';
@@ -168,35 +189,77 @@ export function openCariDetay(cariInput) {
     renderContent();
   });
 
-  function renderContent() {
-    const islemler    = getIslemler();
-    const kasalar     = getKasalar();
-    const vadeler     = getVadeler();
-    const today       = bugun();
-    const bakiye      = hesaplaCariBakiye(cariId, islemler);
-    const hareketler  = islemler
-      .filter(i => i.cariId === cariId)
+  function _refreshHareketListe() {
+    const islemler2 = getIslemler();
+    const kasalar2  = getKasalar();
+    const alleH     = islemler2.filter(i => i.cariId === cariId);
+    const filtreliH = cariHareketleriFiltrele(islemler2, cariId, _arama, _tarihFiltre, _tipFiltre)
       .sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0));
-    const btns        = aksiyonBtns(cari.tip);
+    const filterAktif = _arama || _tarihFiltre !== 'tumu' || _tipFiltre !== 'tumu';
+    const sayiLabel   = filterAktif
+      ? `${filtreliH.length} kayıt — filtreli`
+      : `${alleH.length} kayıt`;
+
+    const titleEl = overlay.querySelector('.cd-hareket-title');
+    if (titleEl) titleEl.textContent = `Hareket Geçmişi (${sayiLabel})`;
+
+    const listEl = overlay.querySelector('#cd-hareketler');
+    if (listEl) {
+      listEl.innerHTML = filtreliH.length === 0
+        ? `<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:16px 0">Sonuç bulunamadı.</p>`
+        : filtreliH.map(h => hareketItemHtml(h, kasalar2)).join('');
+      listEl.querySelectorAll('.hareket-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const id    = item.dataset.islemId;
+          const islem = getIslemler().find(i => i.id === id);
+          if (islem) openIslemDetay(islem);
+        });
+      });
+    }
+
+    const temizleBtn = overlay.querySelector('#cd-arama-temizle');
+    if (temizleBtn) temizleBtn.style.display = _arama ? '' : 'none';
+
+    const filtreTemizleBtn = overlay.querySelector('.cd-filtre-temizle');
+    if (filtreTemizleBtn) filtreTemizleBtn.style.display = filterAktif ? '' : 'none';
+  }
+
+  function renderContent() {
+    const islemler = getIslemler();
+    const kasalar  = getKasalar();
+    const vadeler  = getVadeler();
+    const today    = bugun();
+    const bakiye   = hesaplaCariBakiye(cariId, islemler);
+    const btns     = aksiyonBtns(cari.tip);
+
+    const alleHareketler = islemler.filter(i => i.cariId === cariId);
+    const hareketler     = cariHareketleriFiltrele(islemler, cariId, _arama, _tarihFiltre, _tipFiltre)
+      .sort((a, b) => (b.olusturmaTarihi || 0) - (a.olusturmaTarihi || 0));
+    const filterAktif    = _arama || _tarihFiltre !== 'tumu' || _tipFiltre !== 'tumu';
+    const sayiLabel      = filterAktif
+      ? `${hareketler.length} kayıt — filtreli`
+      : `${alleHareketler.length} kayıt`;
 
     const hareketHtml = hareketler.length === 0
-      ? `<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:16px 0">Henüz hareket yok.</p>`
-      : hareketler.map(h => {
-          const kasa    = kasalar.find(k => k.id === h.kasaId);
-          const label   = ETKI_LABEL[h.cariEtkisi] || h.cariEtkisi;
-          const tutar   = h.tutar || 0;
-          const isGelir = h.tip === 'gelir';
-          const cls     = isGelir ? 'income' : 'expense';
-          const prefix  = isGelir ? '+' : '-';
-          return `
-            <div class="list-item hareket-item" data-islem-id="${h.id}" style="cursor:pointer">
-              <div class="list-item-body">
-                <div class="list-item-title">${label}${h.aciklama ? ' · ' + h.aciklama : ''}</div>
-                <div class="list-item-subtitle">${formatTarih(h.tarih)}${kasa ? ' · ' + kasa.ad : ''}</div>
-              </div>
-              <div class="list-item-amount ${cls}">${prefix}${formatTL(tutar)}</div>
-            </div>`;
-        }).join('');
+      ? `<p style="text-align:center;font-size:13px;color:var(--text-secondary);padding:16px 0">${filterAktif ? 'Sonuç bulunamadı.' : 'Henüz hareket yok.'}</p>`
+      : hareketler.map(h => hareketItemHtml(h, kasalar)).join('');
+
+    const tarihBtnHtml = [
+      { val: 'tumu',    label: 'Tümü'   },
+      { val: 'bu-ay',  label: 'Bu Ay'  },
+      { val: 'bu-yil', label: 'Bu Yıl' },
+    ].map(({ val, label }) =>
+      `<button class="cd-filtre-btn${_tarihFiltre === val ? ' active' : ''}" data-fkey="tarih" data-fval="${val}">${label}</button>`
+    ).join('');
+
+    const tipBtnHtml = [
+      { val: 'tumu',     label: 'Tümü'     },
+      { val: 'borc',     label: 'Borç'     },
+      { val: 'odeme',    label: 'Ödeme'    },
+      { val: 'tahsilat', label: 'Tahsilat' },
+    ].map(({ val, label }) =>
+      `<button class="cd-filtre-btn${_tipFiltre === val ? ' active' : ''}" data-fkey="tip" data-fval="${val}">${label}</button>`
+    ).join('');
 
     overlay.innerHTML = `
       <div class="modal-box cari-detay-box">
@@ -228,7 +291,19 @@ export function openCariDetay(cariInput) {
           ${vadeSection(cariId, vadeler, today, bakiye)}
 
           <div class="section-header" style="margin-top:16px">
-            <span class="section-title" style="font-size:13px">Hareket Geçmişi (${hareketler.length})</span>
+            <span class="section-title cd-hareket-title" style="font-size:13px">Hareket Geçmişi (${sayiLabel})</span>
+            <button class="btn btn-sm cd-filtre-temizle" style="font-size:11px;padding:3px 10px;${filterAktif ? '' : 'display:none'}">Filtreyi Temizle</button>
+          </div>
+          <div class="arama-kutusu-wrap" style="margin-bottom:8px">
+            <span class="arama-icon">🔍</span>
+            <input class="arama-input" id="cd-arama-input" type="text"
+              placeholder="Açıklama, tutar veya tarih ara..."
+              value="${_arama.replace(/"/g, '&quot;')}" autocomplete="off">
+            <button class="arama-temizle" id="cd-arama-temizle" style="${_arama ? '' : 'display:none'}">×</button>
+          </div>
+          <div class="cd-filtre-satir">
+            <div class="cd-filtre-grup">${tarihBtnHtml}</div>
+            <div class="cd-filtre-grup">${tipBtnHtml}</div>
           </div>
           <div id="cd-hareketler">${hareketHtml}</div>
 
@@ -278,6 +353,41 @@ export function openCariDetay(cariInput) {
         const islem = getIslemler().find(i => i.id === id);
         if (islem) openIslemDetay(islem);
       });
+    });
+
+    overlay.querySelector('#cd-arama-input')?.addEventListener('input', e => {
+      _arama = e.target.value;
+      _refreshHareketListe();
+    });
+
+    overlay.querySelector('#cd-arama-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        _arama = '';
+        e.target.value = '';
+        _refreshHareketListe();
+      }
+    });
+
+    overlay.querySelector('#cd-arama-temizle')?.addEventListener('click', () => {
+      _arama = '';
+      const inp = overlay.querySelector('#cd-arama-input');
+      if (inp) { inp.value = ''; inp.focus(); }
+      _refreshHareketListe();
+    });
+
+    overlay.querySelectorAll('.cd-filtre-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.fkey === 'tarih') _tarihFiltre = btn.dataset.fval;
+        else _tipFiltre = btn.dataset.fval;
+        renderContent();
+      });
+    });
+
+    overlay.querySelector('.cd-filtre-temizle')?.addEventListener('click', () => {
+      _arama       = '';
+      _tarihFiltre = 'tumu';
+      _tipFiltre   = 'tumu';
+      renderContent();
     });
   }
 
@@ -358,9 +468,9 @@ function openCariIslemForm(cari, etkiTipi, vade = null, onayTutar = null) {
     borc_cikar: 'Borç Çıkar',
   };
 
-  const needsKasa    = ['odeme', 'avans_ver', 'tahsilat'].includes(etkiTipi);
-  const needsKat     = ['borc_yaz', 'borc_cikar'].includes(etkiTipi);
-  const katTip       = etkiTipi === 'borc_cikar' ? 'gelir' : 'gider';
+  const needsKasa = ['odeme', 'avans_ver', 'tahsilat'].includes(etkiTipi);
+  const needsKat  = ['borc_yaz', 'borc_cikar'].includes(etkiTipi);
+  const katTip    = etkiTipi === 'borc_cikar' ? 'gelir' : 'gider';
 
   const kasaOpts = kasalar.length
     ? kasalar.map(k => `<option value="${k.id}">${k.emoji} ${k.ad}</option>`).join('')
