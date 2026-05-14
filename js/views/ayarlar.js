@@ -229,15 +229,30 @@ export default {
         <div style="font-weight:700;margin-bottom:12px;color:var(--accent)">Uygulama</div>
         <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
           <span style="font-size:14px">Versiyon</span>
-          <span style="font-size:14px;color:var(--text-secondary)">1.0.0</span>
+          <span style="font-size:14px;color:var(--text-secondary)">2.21</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
           <span style="font-size:14px">Firebase</span>
           <span style="font-size:14px;color:var(--success)">Bağlı</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:7px 0">
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
           <span style="font-size:14px">Depolama</span>
           <span style="font-size:14px;color:var(--text-secondary)">Firebase Realtime DB</span>
+        </div>
+        <div style="padding:10px 0 2px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;letter-spacing:0.4px">SON GÜNCELLEMELER</div>
+          ${[
+            ['2.21', 'PIN kilit + auto-lock + email kurtarma'],
+            ['2.20', 'Vade renk skalası (yeşil → kırmızı)'],
+            ['2.19', 'Cari arama + sıralama + Bana Borçlu Olanlar'],
+            ['2.18', '✓ Ödendi manuel işaret'],
+            ['2.17', 'Bu Ay Ödemelerim + Sabit Giderler + Cariler nav'],
+            ['2.16', 'Maaş Öde Wizard'],
+          ].map(([v, t]) => `
+            <div style="display:flex;gap:10px;padding:4px 0;align-items:baseline">
+              <span style="font-size:11px;font-weight:700;color:var(--accent);min-width:32px">v${v}</span>
+              <span style="font-size:12px;color:var(--text-secondary)">${t}</span>
+            </div>`).join('')}
         </div>
       </div>
 
