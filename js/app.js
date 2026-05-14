@@ -12,7 +12,8 @@ import {
   setSabitGiderler,
   subscribe
 } from './state.js';
-import { bugun, formatTarih, temizleEskiOdendiIsaretleri } from './utils.js';
+import { bugun, formatTarih, temizleEskiOdendiIsaretleri, pinAktif, pinDenemeSifirla, autoLockSureGetir } from './utils.js';
+import { showPinKilit, hidePinKilit } from './views/pinKilit.js';
 import { openIslemForm } from './components/islemForm.js';
 import TakvimView, { openTakvim } from './views/takvim.js';
 import KasaDetay from './views/kasaDetay.js';
@@ -45,6 +46,9 @@ const navItems  = document.querySelectorAll('.nav-item');
 
 let _unsubListeners = [];
 let _authenticated  = false;
+let _kilitli        = false;
+let _autoLockTimer  = null;
+window.sonAktivite  = Date.now();
 
 // ─── Routing ───────────────────────────────────────────────────
 
@@ -109,6 +113,51 @@ function hideAppUI() {
   if (syncEl)    syncEl.style.display    = 'none';
 }
 
+// ─── PIN Lock ──────────────────────────────────────────────────
+
+function kilitle() {
+  if (_kilitli || !_authenticated) return;
+  _kilitli = true;
+  showPinKilit(() => {
+    _kilitli = false;
+    pinDenemeSifirla();
+    window.sonAktivite = Date.now();
+  });
+}
+
+window.kilitle = kilitle;
+window.pinAktifMi = pinAktif;
+window.defterNavigate = navigate;
+
+function _aktiviteGuncelle() {
+  window.sonAktivite = Date.now();
+}
+
+function _autoLockBaslat() {
+  if (_autoLockTimer) clearInterval(_autoLockTimer);
+  _autoLockTimer = setInterval(() => {
+    if (!_authenticated || !pinAktif() || _kilitli) return;
+    const sure = autoLockSureGetir();
+    if (sure === 0) return;
+    const fark = (Date.now() - window.sonAktivite) / 1000;
+    if (fark >= sure) kilitle();
+  }, 5000);
+}
+
+function _autoLockDurdur() {
+  if (_autoLockTimer) { clearInterval(_autoLockTimer); _autoLockTimer = null; }
+}
+
+['mousemove', 'click', 'touchstart', 'keydown', 'scroll'].forEach(ev => {
+  document.addEventListener(ev, _aktiviteGuncelle, { passive: true });
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && _authenticated && pinAktif() && !_kilitli) {
+    kilitle();
+  }
+});
+
 // ─── Auth lifecycle ────────────────────────────────────────────
 
 function startApp(user) {
@@ -129,11 +178,27 @@ function startApp(user) {
   checkAndCreateDefaults(user.uid).catch(console.error);
   checkAndCreateDefaultCariler(user.uid).catch(console.error);
 
-  navigate(currentView());
+  _autoLockBaslat();
+  window.sonAktivite = Date.now();
+
+  if (pinAktif()) {
+    _kilitli = true;
+    showPinKilit(() => {
+      _kilitli = false;
+      pinDenemeSifirla();
+      window.sonAktivite = Date.now();
+      navigate(currentView());
+    });
+  } else {
+    navigate(currentView());
+  }
 }
 
 function stopApp() {
   _authenticated = false;
+  _kilitli = false;
+  _autoLockDurdur();
+  hidePinKilit();
   _unsubListeners.forEach(fn => fn?.());
   _unsubListeners = [];
   setCurrentUser(null);

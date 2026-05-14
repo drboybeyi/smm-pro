@@ -3611,3 +3611,194 @@ select.form-control {
 .cal-cell.vade-3      { background: var(--vade-3-bg)      !important; }
 .cal-cell.vade-7      { background: var(--vade-7-bg)      !important; }
 .cal-cell.vade-30     { background: var(--vade-30-bg)     !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   Faz 4.21 — PIN KİLİT SİSTEMİ
+═══════════════════════════════════════════════════════════ */
+
+.pin-kilit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pin-fade-in 0.2s ease;
+}
+
+@keyframes pin-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pin-kilit-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 340px;
+  padding: 0 16px 32px;
+}
+
+.pin-kilit-logo {
+  font-size: 52px;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.pin-kilit-baslik {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.pin-kilit-alt {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+}
+
+/* Nokta göstergesi */
+.pin-dots {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.pin-mini-dots {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  justify-content: center;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.pin-dot.dolu {
+  background: var(--accent);
+  transform: scale(1.15);
+}
+
+.pin-dot.yanlis {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+/* Titreme animasyonu */
+.pin-dots.titreme,
+.pin-mini-dots.titreme {
+  animation: pin-shake 0.5s ease;
+}
+
+@keyframes pin-shake {
+  0%,100% { transform: translateX(0); }
+  15%      { transform: translateX(-8px); }
+  30%      { transform: translateX(8px); }
+  45%      { transform: translateX(-6px); }
+  60%      { transform: translateX(6px); }
+  75%      { transform: translateX(-3px); }
+  90%      { transform: translateX(3px); }
+}
+
+/* Hata mesajı */
+.pin-hata {
+  font-size: 13px;
+  color: var(--danger);
+  min-height: 18px;
+  text-align: center;
+  display: none;
+}
+
+/* Numpad */
+.pin-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  margin: 16px auto 0;
+}
+
+.pin-numpad-modal {
+  max-width: 260px;
+}
+
+.pin-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  font-family: inherit;
+}
+
+.pin-btn:active {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(0.93);
+}
+
+.pin-btn-bos {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.pin-btn-sil {
+  font-size: 20px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.pin-btn-sil:active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Email ile aç */
+.pin-email-wrap {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.pin-email-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s, font-size 0.15s;
+}
+
+.pin-email-btn.vurgulu {
+  color: var(--danger);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pin-email-btn:hover {
+  text-decoration: underline;
+}

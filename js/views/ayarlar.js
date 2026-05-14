@@ -1,12 +1,57 @@
 import { getAyarlar, getKasalar, getKategoriler, getIslemler, getSabitGiderler } from '../state.js';
 import { updateAyarlar, hesaplaKasaBakiyesi } from '../db.js';
-import { formatTL } from '../utils.js';
+import { formatTL, pinAktif, pinSil, autoLockSureGetir, autoLockSureKaydet } from '../utils.js';
 import { auth, logoutUser } from '../firebase-config.js';
+import { show as showToast } from '../components/toast.js';
 import { showKasaModal } from './kasalar.js';
 import { showKategoriModal } from './kategoriler.js';
 import { showSabitGiderModal } from './sabitGiderler.js';
+import { showPinKurmaModal, showPinDogrulaModal } from './pinKurma.js';
 
 let _ayKatTab = 'gider';
+
+function _guvenlikSection() {
+  const aktif = pinAktif();
+  const sure  = autoLockSureGetir();
+  const sureler = [
+    { v: 15,  l: '15 saniye' },
+    { v: 30,  l: '30 saniye' },
+    { v: 60,  l: '1 dakika' },
+    { v: 300, l: '5 dakika' },
+    { v: 600, l: '10 dakika' },
+    { v: 0,   l: 'Kapalı' },
+  ];
+  const opts = sureler.map(s =>
+    `<option value="${s.v}" ${sure === s.v ? 'selected' : ''}>${s.l}</option>`
+  ).join('');
+
+  return `
+    <div class="card mb-3">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--accent)">🔒 Güvenlik</div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:600">PIN ile koruma</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Ekran kilidi (email girişine ek)</div>
+        </div>
+        <label class="set-toggle">
+          <input type="checkbox" id="pinToggle" ${aktif ? 'checked' : ''}>
+          <span class="set-toggle-slider"></span>
+        </label>
+      </div>
+
+      ${aktif ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:14px">Otomatik kilitlenme</span>
+        <select class="form-control" id="autoLockSure" style="width:auto;max-width:140px">${opts}</select>
+      </div>
+      <div style="padding-top:10px">
+        <button class="btn btn-secondary btn-block" id="btnPinDegistir">PIN'i Değiştir</button>
+      </div>
+      ` : ''}
+    </div>
+  `;
+}
 
 export default {
   render() {
@@ -196,6 +241,9 @@ export default {
         </div>
       </div>
 
+      <!-- ─── Güvenlik (PIN) ─── -->
+      ${_guvenlikSection()}
+
       <button class="btn btn-primary btn-block" id="btnAyarlarKaydet">Kaydet</button>
     `;
   },
@@ -271,6 +319,38 @@ export default {
     });
 
     document.getElementById('btnCikis')?.addEventListener('click', () => showLogoutConfirm());
+
+    // ─── PIN / Güvenlik ───────────────────────────────────────
+    const pinToggle = document.getElementById('pinToggle');
+    if (pinToggle) {
+      pinToggle.addEventListener('change', () => {
+        if (pinToggle.checked) {
+          showPinKurmaModal(() => {
+            window.defterNavigate?.('ayarlar');
+          });
+        } else {
+          showPinDogrulaModal('PIN Kapatma', () => {
+            pinSil();
+            showToast('PIN devre dışı', 'success');
+            window.defterNavigate?.('ayarlar');
+          });
+        }
+        pinToggle.checked = pinAktif();
+      });
+    }
+
+    document.getElementById('autoLockSure')?.addEventListener('change', e => {
+      autoLockSureKaydet(parseInt(e.target.value));
+    });
+
+    document.getElementById('btnPinDegistir')?.addEventListener('click', () => {
+      showPinDogrulaModal('Mevcut PIN', () => {
+        showPinKurmaModal(() => {
+          showToast('PIN güncellendi', 'success');
+          window.defterNavigate?.('ayarlar');
+        });
+      });
+    });
 
     // ─── Form Varsayılanları ───────────────────────────────────
     function saveFV() {

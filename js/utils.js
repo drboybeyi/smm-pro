@@ -784,3 +784,62 @@ export function sabitGiderSonrakiOdeme(odemeGunu) {
   const gun    = Math.min(odemeGunu, maxDay);
   return `${nextY}-${String(nextM).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
 }
+
+// ─── PIN Helpers ───────────────────────────────────────────────
+
+export async function pinHash(pin) {
+  const encoder = new TextEncoder();
+  const data    = encoder.encode(pin);
+  const hash    = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export function pinAktif() {
+  return localStorage.getItem('defter-pin-enabled') === 'true';
+}
+
+export async function pinKaydet(pin) {
+  const hash = await pinHash(pin);
+  localStorage.setItem('defter-pin-hash', hash);
+  localStorage.setItem('defter-pin-enabled', 'true');
+  localStorage.setItem('defter-pin-deneme', '0');
+}
+
+export async function pinDogrula(pin) {
+  const savedHash = localStorage.getItem('defter-pin-hash');
+  if (!savedHash) return false;
+  const hash = await pinHash(pin);
+  return hash === savedHash;
+}
+
+export function pinSil() {
+  localStorage.removeItem('defter-pin-hash');
+  localStorage.setItem('defter-pin-enabled', 'false');
+  localStorage.removeItem('defter-pin-deneme');
+  localStorage.removeItem('defter-son-aktivite');
+}
+
+export function pinDenemeArttir() {
+  const current = parseInt(localStorage.getItem('defter-pin-deneme') || '0');
+  localStorage.setItem('defter-pin-deneme', String(current + 1));
+  return current + 1;
+}
+
+export function pinDenemeSifirla() {
+  localStorage.setItem('defter-pin-deneme', '0');
+}
+
+export function pinDenemeGetir() {
+  return parseInt(localStorage.getItem('defter-pin-deneme') || '0');
+}
+
+export function autoLockSureGetir() {
+  const v = localStorage.getItem('defter-autolock-sn');
+  return v === null ? 30 : parseInt(v);
+}
+
+export function autoLockSureKaydet(sn) {
+  localStorage.setItem('defter-autolock-sn', String(sn));
+}
