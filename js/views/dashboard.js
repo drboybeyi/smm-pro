@@ -2,7 +2,8 @@ import { getIslemler, getKasalar, getKategoriler, getCariler, getVadeler, getSab
 import {
   formatTL, formatTarih, bugun, gunFarki,
   aralikIcindeMi, islemTipiEtiketi, islemTutarFormati,
-  kisaltilmisRakam, bugunOzet, bugunKasaDagilim, vadeRengiSinifi
+  kisaltilmisRakam, bugunOzet, bugunKasaDagilim, vadeRengiSinifi,
+  buHaftaSabitGiderler
 } from '../utils.js';
 import { openIslemDetay } from '../components/islemDetay.js';
 import { hesaplaKasaBakiyesi } from '../db.js';
@@ -290,31 +291,45 @@ function openBugunDetay() {
 
 // ─── Yaklaşan ödemeler ────────────────────────────────────────
 
-function yaklaşanOdemelerCard(cariler, vadeler, today) {
-  const yaklaşanlar = vadeler
+function yaklaşanOdemelerCard(cariler, vadeler, sabitGiderler, today) {
+  // Cari vadeler (önümüzdeki 7 gün, bugün hariç)
+  const vadeRows = vadeler
     .filter(v => v.vadeTarih && (v.durum === 'bekliyor' || !v.durum))
     .map(v => {
       const fark = gunFarki(v.vadeTarih, today);
-      if (!isFinite(fark) || fark <= 0 || fark > 7) return null;
+      if (!isFinite(fark) || fark < 0 || fark > 7) return null;
       const cari = cariler.find(c => c.id === v.cariId);
       if (!cari) return null;
-      return { cari, vade: v, fark };
+      return { tip: 'vade', ad: cari.ad, tarih: v.vadeTarih, tutar: v.tutar, fark, cariId: cari.id };
     })
-    .filter(Boolean)
-    .sort((a, b) => a.fark - b.fark);
+    .filter(Boolean);
+
+  // Sabit giderler (önümüzdeki 7 gün içinde, bugün dahil, ödenmemiş)
+  const sgRows = buHaftaSabitGiderler(sabitGiderler).map(sg => ({
+    tip: 'sabit',
+    ad: `${sg.emoji || '💸'} ${sg.ad}`,
+    tarih: sg.odemeTarih,
+    tutar: sg.varsayilanTutar || null,
+    fark: sg.fark,
+  }));
+
+  const yaklaşanlar = [...vadeRows, ...sgRows].sort((a, b) => a.fark - b.fark);
 
   const inner = yaklaşanlar.length === 0
     ? `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">✓ Yaklaşan ödeme yok</p>`
-    : yaklaşanlar.map(({ cari, vade, fark }) => {
-        const sinif = vadeRengiSinifi(vade.vadeTarih);
+    : yaklaşanlar.map(item => {
+        const sinif    = vadeRengiSinifi(item.tarih);
+        const cariAttr = item.tip === 'vade' ? `data-cari-id="${item.cariId}"` : '';
+        const cursor   = item.tip === 'vade' ? 'cursor:pointer;' : '';
+        const tutarStr = item.tutar ? formatTL(item.tutar) : '—';
         return `
-          <div class="dash-vade-row${sinif ? ' ' + sinif : ''}" data-cari-id="${cari.id}"
-               style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer">
+          <div class="dash-vade-row${sinif ? ' ' + sinif : ''}" ${cariAttr}
+               style="${cursor}display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border)">
             <div>
-              <div style="font-size:14px;font-weight:600">${cari.ad}</div>
-              <div style="font-size:12px">${fark === 0 ? 'Bugün ödeme!' : fark + ' gün sonra'} · ${formatTarih(vade.vadeTarih)}</div>
+              <div style="font-size:14px;font-weight:600">${item.ad}</div>
+              <div style="font-size:12px">${item.fark === 0 ? 'Bugün!' : item.fark + ' gün sonra'} · ${formatTarih(item.tarih)}</div>
             </div>
-            <span style="font-size:14px;font-weight:700;color:var(--danger)">${formatTL(vade.tutar)}</span>
+            <span style="font-size:14px;font-weight:700;color:var(--danger)">${tutarStr}</span>
           </div>`;
       }).join('');
 
@@ -428,7 +443,7 @@ export default {
 
       ${bugunOdeKarti(vadeler, cariler, today)}
 
-      ${yaklaşanOdemelerCard(cariler, vadeler, today)}
+      ${yaklaşanOdemelerCard(cariler, vadeler, sabitGiderler, today)}
 
       ${renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoriler)}
 

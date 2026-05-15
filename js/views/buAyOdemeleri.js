@@ -1,5 +1,5 @@
 import { getKasalar, getKategoriler, getIslemler, getCariler, getSabitGiderler } from '../state.js';
-import { hesaplaCariBakiye, formatTL, bugun, odendiIsaretle, odendiKontrol, vadeRengiSinifi, sabitGiderSonrakiOdeme } from '../utils.js';
+import { hesaplaCariBakiye, formatTL, bugun, odendiIsaretle, odendiKontrol, vadeRengiSinifi, sabitGiderSonrakiOdeme, buAyOdemeTarihi } from '../utils.js';
 import { addIslem, updateSabitGider } from '../db.js';
 import { show as showToast } from '../components/toast.js';
 import { openMaasOde } from './maasOde.js';
@@ -71,8 +71,10 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
 
   const maaslarHtml = bekleyenMaaslar.length > 0 ? `
     <div class="bay-section-baslik">MAAŞLAR</div>
-    ${bekleyenMaaslar.map(p => `
-      <div class="bay-satir">
+    ${bekleyenMaaslar.map(p => {
+      const maasSinif = vadeRengiSinifi(buAyOdemeTarihi(p.maasOdemeGunu || 5));
+      return `
+      <div class="bay-satir${maasSinif ? ' ' + maasSinif : ''}">
         <div class="bay-satir-sol">
           <div class="bay-satir-ad">👤 ${p.ad}</div>
           <div class="bay-satir-detay">${
@@ -86,13 +88,14 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
           <button class="btn btn-sm btn-primary bay-ode-btn"
             data-type="maas" data-id="${p.id}">Öde →</button>
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   ` : '';
 
   const sabitlerHtml = bekleyenSabitler.length > 0 ? `
     <div class="bay-section-baslik${bekleyenMaaslar.length > 0 ? ' bay-section-separator' : ''}">SABİT GİDERLER</div>
     ${bekleyenSabitler.map(sg => {
-      const sinif = vadeRengiSinifi(sabitGiderSonrakiOdeme(sg.odemeGunu));
+      const sinif = vadeRengiSinifi(buAyOdemeTarihi(sg.odemeGunu));
       return `
       <div class="bay-satir${sinif ? ' ' + sinif : ''}">
         <div class="bay-satir-sol">

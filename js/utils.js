@@ -773,7 +773,8 @@ export function sabitGiderSonrakiOdeme(odemeGunu) {
   if (!odemeGunu || odemeGunu < 1 || odemeGunu > 31) return null;
   const today = bugun();
   const [y, m, d] = today.split('-').map(Number);
-  if (d < odemeGunu) {
+  // d <= odemeGunu: bugün ödeme günüyse bu ayı döndür (bugün dahil)
+  if (d <= odemeGunu) {
     const maxDay = new Date(y, m, 0).getDate();
     const gun    = Math.min(odemeGunu, maxDay);
     return `${y}-${String(m).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
@@ -783,6 +784,33 @@ export function sabitGiderSonrakiOdeme(odemeGunu) {
   const maxDay = new Date(nextY, nextM, 0).getDate();
   const gun    = Math.min(odemeGunu, maxDay);
   return `${nextY}-${String(nextM).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+}
+
+// Bu ayın ödeme tarihi (Bu Ay Ödemelerim renk kodu için — geçmiş dahil bu aydaki tarih)
+export function buAyOdemeTarihi(odemeGunu) {
+  if (!odemeGunu || odemeGunu < 1 || odemeGunu > 31) return null;
+  const today = bugun();
+  const [y, m] = today.split('-').map(Number);
+  const maxDay = new Date(y, m, 0).getDate();
+  const gun    = Math.min(odemeGunu, maxDay);
+  return `${y}-${String(m).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+}
+
+// Önümüzdeki 7 gün içinde vadesi gelen ödenmemiş sabit giderler
+export function buHaftaSabitGiderler(sabitGiderler) {
+  const today   = bugun();
+  const [y, m]  = today.split('-').map(Number);
+  const sonuc   = [];
+  for (const sg of sabitGiderler) {
+    if (sg.silindi || sg.aktif === false) continue;
+    const tarih = sabitGiderSonrakiOdeme(sg.odemeGunu);
+    if (!tarih) continue;
+    const fark = gunFarki(tarih, today);
+    if (!isFinite(fark) || fark < 0 || fark > 7) continue;
+    if (odendiKontrol('sabit', sg.id, y, m)) continue;
+    sonuc.push({ ...sg, odemeTarih: tarih, fark });
+  }
+  return sonuc.sort((a, b) => a.fark - b.fark);
 }
 
 // ─── PIN Helpers ───────────────────────────────────────────────
