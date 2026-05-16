@@ -3613,6 +3613,35 @@ select.form-control {
 .cal-cell.vade-30     { background: var(--vade-30-bg)     !important; }
 
 /* ═══════════════════════════════════════════════════════════
+   Faz 4.22a — ÖDEMELER SEKMESİ
+═══════════════════════════════════════════════════════════ */
+
+/* Ödendi satırı — yarı saydam */
+.od-odendi {
+  opacity: 0.45;
+}
+
+/* "✓ Ödendi" inline etiketi */
+.od-etiket {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--success);
+  background: #e8f4e8;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Buton alanındaki tek ✓ ikon (ödendi oldu) */
+.od-odendi-ikon {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 0 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════
    Faz 4.21 — PIN KİLİT SİSTEMİ
 ═══════════════════════════════════════════════════════════ */
 

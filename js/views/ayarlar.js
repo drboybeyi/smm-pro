@@ -87,7 +87,8 @@ export default {
 
     return `
       <div class="section-header" style="margin-top:0">
-        <span class="section-title">Ayarlar</span>
+        <span class="section-title">⚙️ Ayarlar</span>
+        <button class="btn btn-secondary btn-sm" id="btnAyarlarGeri">← Geri</button>
       </div>
 
       <div class="card mb-3">
@@ -331,6 +332,10 @@ export default {
         btn.disabled = true;
         setTimeout(() => { btn.textContent = 'Kaydet'; btn.disabled = false; }, 1800);
       }
+    });
+
+    document.getElementById('btnAyarlarGeri')?.addEventListener('click', () => {
+      window.defterNavigate?.('dashboard');
     });
 
     document.getElementById('btnCikis')?.addEventListener('click', () => showLogoutConfirm());
