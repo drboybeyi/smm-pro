@@ -24,15 +24,17 @@ import CarilerView, { openCariler } from './views/cariler.js';
 import { openCariDetay } from './views/cariDetay.js';
 import { show as showToast } from './components/toast.js';
 import { show as showLogin } from './views/login.js';
-import Dashboard from './views/dashboard.js';
-import Islemler  from './views/islemler.js';
-import Ayarlar   from './views/ayarlar.js';
+import Dashboard   from './views/dashboard.js';
+import Islemler    from './views/islemler.js';
+import Ayarlar     from './views/ayarlar.js';
+import OdemelerView from './views/odemeler.js';
 
 const VIEWS = {
   dashboard:       Dashboard,
   islemler:        Islemler,
   takvim:          TakvimView,
   cariler:         CarilerView,
+  odemeler:        OdemelerView,
   kasaDetay:       KasaDetay,
   tumKasalarDetay: TumKasalarDetay,
   ayarlar:         Ayarlar

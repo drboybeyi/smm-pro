@@ -3802,3 +3802,182 @@ select.form-control {
 .pin-email-btn:hover {
   text-decoration: underline;
 }
+
+/* ===== Ödemeler View ===== */
+.odemeler-view {
+  padding-bottom: 80px;
+}
+
+.odm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 4px;
+}
+
+.odm-baslik {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.odm-ay-secici {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.odm-ay-btn {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.odm-ay-btn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.odm-ay-metin {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 110px;
+  text-align: center;
+}
+
+.odm-kart {
+  padding: 12px 0;
+}
+
+.odm-bolum-baslik {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 4px 16px 6px;
+}
+
+.odm-bolum-separator {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.odm-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  gap: 8px;
+  transition: opacity 0.2s;
+}
+
+.odm-satir.odm-odendi {
+  opacity: 0.45;
+}
+
+.odm-satir-sol {
+  flex: 1;
+  min-width: 0;
+}
+
+.odm-satir-ad {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.odm-gun {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.odm-satir-detay {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.odm-satir-butonlar {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.odm-isaretle-btn {
+  background: none;
+  border: 1.5px solid var(--success);
+  border-radius: 8px;
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.odm-isaretle-btn:active {
+  background: var(--success);
+  color: #fff;
+}
+
+.odm-odendi-etiketi {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.odm-toplam {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 4px;
+  margin-top: 8px;
+  border-top: 1.5px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.odm-toplam strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.odm-bos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.odm-bos-ikon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  color: var(--success);
+}
+
+.odm-bos-metin {
+  font-size: 15px;
+  color: var(--text-muted);
+}
