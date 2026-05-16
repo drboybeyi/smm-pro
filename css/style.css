@@ -3598,6 +3598,35 @@ select.form-control {
 .vade-7      { border-left: 6px solid var(--vade-7-cl);      background: var(--vade-7-bg);      }
 .vade-30     { border-left: 6px solid var(--vade-30-cl);     background: var(--vade-30-bg);     }
 
+/* Faz 4.23a: Yaklaşan Ödemeler — kenardan kenara renk */
+/* Card overflow: köşelerde clipping için */
+.card:has(.dash-vade-row) {
+  overflow: hidden;
+}
+
+/* Renkli vade satırı: kart padding'ini iptal et, kenardan kenara uzat */
+.dash-vade-row.vade-gecmis,
+.dash-vade-row.vade-bugun,
+.dash-vade-row.vade-1,
+.dash-vade-row.vade-3,
+.dash-vade-row.vade-7,
+.dash-vade-row.vade-30 {
+  margin-left:   -16px !important;
+  margin-right:  -16px !important;
+  padding-left:   22px !important; /* 6px border-left + 22px = 28px, eski konuma eşit */
+  padding-right:  28px !important; /* 16px kart + 12px orijinal */
+  border-radius:  0    !important;
+}
+
+/* Faz 4.23b: Yaklaşan Ödemeler — üst/alt 4px kart padding'i de iptal */
+.card:has(.dash-vade-row) .dash-vade-row:first-child {
+  margin-top: -4px !important;
+}
+.card:has(.dash-vade-row) .dash-vade-row:last-child {
+  margin-bottom: -4px !important;
+  border-bottom: none !important;
+}
+
 /* Cal-cell: sadece arka plan tonu, sol kenarlık kaldırılır */
 .cal-cell.vade-gecmis,
 .cal-cell.vade-bugun,
