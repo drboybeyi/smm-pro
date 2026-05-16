@@ -11,6 +11,7 @@ import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
 import { openKasaDetay } from './kasaDetay.js';
+import { renderGecikmisOdemelerKarti, afterGecikmisOdemelerKarti } from './gecikmisOdemeler.js';
 
 const AYLAR  = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                 'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -442,6 +443,8 @@ export default {
 
       ${bugunOdeKarti(vadeler, cariler, today)}
 
+      ${renderGecikmisOdemelerKarti()}
+
       ${yaklaşanOdemelerCard(cariler, vadeler, sabitGiderler, today)}
 
       ${bugunBolumu(islemler, today)}
@@ -493,6 +496,8 @@ export default {
         }
       });
     });
+
+    afterGecikmisOdemelerKarti();
 
     document.getElementById('dashAyGeri')?.addEventListener('click', () => {
       setTarihAraligi(oncekiAy(getTarihAraligi().baslangic));

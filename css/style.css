@@ -3832,6 +3832,88 @@ select.form-control {
   text-decoration: underline;
 }
 
+/* ===== Gecikmiş Ödemeler Dashboard Kartı ===== */
+.gecikmis-title {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.card.gecikmis-kart {
+  padding: 0;
+  overflow: hidden;
+}
+
+.dash-gecikmis-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dash-gecikmis-row:last-child {
+  border-bottom: none;
+}
+
+.dash-gecikmis-sol {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-gecikmis-ad {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-gecikmis-meta {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.dash-gecikmis-butonlar {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dash-gecikmis-isaretle {
+  background: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dash-gecikmis-isaretle:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dash-gecikmis-ode {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dash-gecikmis-ode:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 /* ===== Ödemeler View ===== */
 .odemeler-view {
   padding-bottom: 80px;

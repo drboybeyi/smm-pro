@@ -93,7 +93,8 @@ function renderIcerik() {
       const brut       = c.sabitBrutMaas || 0;
       const net        = Math.max(0, brut - avans);
       const odemeTarih = ayinOdemeTarihi(c.maasOdemeGunu || 5, ayStr);
-      const renkSinif  = odendi ? '' : vadeRengiSinifi(odemeTarih);
+      let renkSinif    = odendi ? '' : vadeRengiSinifi(odemeTarih);
+      if (renkSinif === 'vade-gecmis') renkSinif = 'vade-1'; // Ödemeler sayfasında yumuşak kırmızı
       const detay      = `Brüt ${formatTL(brut)}${avans > 0.01 ? ` · Avans ${formatTL(avans)}` : ''}${net !== brut ? ` → Net ${formatTL(net)}` : ''}`;
       return { c, odendi, net, renkSinif, detay };
     });
@@ -104,7 +105,8 @@ function renderIcerik() {
     .map(sg => {
       const odendi     = sabitGiderOdenmiMi(sg, ayStr, islemler);
       const odemeTarih = ayinOdemeTarihi(sg.odemeGunu, ayStr);
-      const renkSinif  = odendi ? '' : vadeRengiSinifi(odemeTarih);
+      let renkSinif    = odendi ? '' : vadeRengiSinifi(odemeTarih);
+      if (renkSinif === 'vade-gecmis') renkSinif = 'vade-1'; // Ödemeler sayfasında yumuşak kırmızı
       return { sg, odendi, renkSinif };
     });
 
