@@ -11,7 +11,6 @@ import { openIslemForm } from '../components/islemForm.js';
 import { openOdemeFormu } from './cariDetay.js';
 import { openAyOzet } from './ayOzet.js';
 import { openKasaDetay } from './kasaDetay.js';
-import { renderBuAyOdemeKarti, afterBuAyOdemeKarti } from './buAyOdemeleri.js';
 
 const AYLAR  = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                 'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -445,8 +444,6 @@ export default {
 
       ${yaklaşanOdemelerCard(cariler, vadeler, sabitGiderler, today)}
 
-      ${renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoriler)}
-
       ${bugunBolumu(islemler, today)}
 
       ${kasalar.length ? `
@@ -496,9 +493,6 @@ export default {
         }
       });
     });
-
-    // ─── Bu Ay Ödemelerim butonları ───────────────────────────
-    afterBuAyOdemeKarti(getCariler(), getSabitGiderler());
 
     document.getElementById('dashAyGeri')?.addEventListener('click', () => {
       setTarihAraligi(oncekiAy(getTarihAraligi().baslangic));
