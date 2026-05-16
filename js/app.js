@@ -230,6 +230,7 @@ function showFabSheet() {
       <button class="fab-sheet-btn fab-borclar"  id="fab-borclar">💸 Cari Borçlarım</button>
       <button class="fab-sheet-btn fab-borclu"   id="fab-borclu">💰 Bana Borçlu Olanlar</button>
       <button class="fab-sheet-btn fab-takvim"   id="fab-takvim">📅 Takvim Görünümü</button>
+      <button class="fab-sheet-btn fab-ayarlar"  id="fab-ayarlar">⚙️ Ayarlar</button>
       <button class="fab-sheet-btn fab-iptal"    id="fab-iptal">İptal</button>
     </div>`;
 
@@ -249,6 +250,7 @@ function showFabSheet() {
   document.getElementById('fab-borclar')?.addEventListener('click',  () => { close(); setTimeout(() => openCariBorclar(),           220); });
   document.getElementById('fab-borclu')?.addEventListener('click',   () => { close(); setTimeout(() => openBanaBorcluOlanlar(),   220); });
   document.getElementById('fab-takvim')?.addEventListener('click',   () => { close(); setTimeout(() => { location.hash = '#takvim'; }, 220); });
+  document.getElementById('fab-ayarlar')?.addEventListener('click',  () => { close(); setTimeout(() => { location.hash = '#ayarlar'; }, 220); });
   document.getElementById('fab-iptal')?.addEventListener('click', close);
 }
 
