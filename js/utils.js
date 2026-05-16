@@ -813,6 +813,24 @@ export function buHaftaSabitGiderler(sabitGiderler) {
   return sonuc.sort((a, b) => a.fark - b.fark);
 }
 
+// ─── Bakım Yardımcıları ────────────────────────────────────────
+
+export function bulYetimVadeler(vadeler, cariler) {
+  const aktifCariIds = new Set(cariler.filter(c => !c.silindi).map(c => c.id));
+  const yetimler = [];
+  for (const vade of vadeler) {
+    if (vade.silindi) continue;
+    let sebep = null;
+    if (!vade.cariId) {
+      sebep = 'cariId yok';
+    } else if (!aktifCariIds.has(vade.cariId)) {
+      sebep = 'cari bulunamadı veya silindi';
+    }
+    if (sebep) yetimler.push({ ...vade, sebep });
+  }
+  return yetimler;
+}
+
 // ─── PIN Helpers ───────────────────────────────────────────────
 
 export async function pinHash(pin) {

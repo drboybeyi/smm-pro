@@ -7,6 +7,7 @@ import { showKasaModal } from './kasalar.js';
 import { showKategoriModal } from './kategoriler.js';
 import { showSabitGiderModal } from './sabitGiderler.js';
 import { showPinKurmaModal, showPinDogrulaModal } from './pinKurma.js';
+import { renderBakimSection, afterBakimSection } from './bakim.js';
 
 let _ayKatTab = 'gider';
 
@@ -259,6 +260,9 @@ export default {
       <!-- ─── Güvenlik (PIN) ─── -->
       ${_guvenlikSection()}
 
+      <!-- ─── Bakım ─── -->
+      ${renderBakimSection()}
+
       <button class="btn btn-primary btn-block" id="btnAyarlarKaydet">Kaydet</button>
     `;
   },
@@ -394,6 +398,9 @@ export default {
     });
 
     document.getElementById('fv-hatirla')?.addEventListener('change', saveFV);
+
+    // ─── Bakım ────────────────────────────────────────────────
+    afterBakimSection();
   }
 };
 
