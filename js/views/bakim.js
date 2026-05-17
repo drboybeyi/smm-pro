@@ -1,13 +1,22 @@
-import { getVadeler, getCariler } from '../state.js';
+import { getVadeler, getCariler, getState } from '../state.js';
 import { bulYetimVadeler, formatTL, formatTarih } from '../utils.js';
 import { deleteVade } from '../db.js';
 import { show as showToast } from '../components/toast.js';
+import { auth } from '../firebase-config.js';
 
 export function renderBakimSection() {
   return `
     <div class="card mb-3">
-      <div style="font-weight:700;margin-bottom:4px;color:var(--accent)">🧹 Bakım</div>
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--accent)">🧹 Bakım</div>
+
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5">
+          Tüm verilerinizi (kasalar, işlemler, cariler, vadeler) tek bir JSON dosyası olarak indirin. Google Drive'a yedek olarak saklayabilirsiniz.
+        </p>
+        <button class="btn btn-secondary btn-block" id="btnYedekIndir">📥 Yedek İndir (JSON)</button>
+      </div>
+
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5">
         Artık var olmayan carilere bağlı vade kayıtlarını bul ve temizle.
       </p>
       <button class="btn btn-secondary btn-block" id="btnYetimBul">🔍 Yetim Vadeleri Bul</button>
@@ -15,12 +24,43 @@ export function renderBakimSection() {
 }
 
 export function afterBakimSection() {
+  document.getElementById('btnYedekIndir')?.addEventListener('click', _yedekIndir);
+
   document.getElementById('btnYetimBul')?.addEventListener('click', () => {
     const vadeler = getVadeler();
     const cariler = getCariler();
     const yetimler = bulYetimVadeler(vadeler, cariler);
     _openYetimModal(yetimler);
   });
+}
+
+function _yedekIndir() {
+  const s = getState();
+  const tarih = new Date().toISOString().slice(0, 10);
+  const veri = {
+    version: 'v2.27',
+    exportDate: new Date().toISOString(),
+    userId: auth.currentUser?.uid || '',
+    data: {
+      kasalar:       s.kasalar,
+      kategoriler:   s.kategoriler,
+      islemler:      s.islemler,
+      cariler:       s.cariler,
+      vadeler:       s.vadeler,
+      sabitGiderler: s.sabitGiderler,
+      ayarlar:       s.ayarlar,
+    }
+  };
+  const blob = new Blob([JSON.stringify(veri, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `defter-pro-yedek-${tarih}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`✓ Yedek indirildi: defter-pro-yedek-${tarih}.json`, 'success');
 }
 
 function _openYetimModal(yetimler) {
