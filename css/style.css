@@ -3591,12 +3591,12 @@ select.form-control {
 
 /* ─── Faz 4.20: Vade Renk Skalası ──────────────────────────── */
 
-.vade-gecmis { border-left: 6px solid var(--vade-gecmis-cl); background: var(--vade-gecmis-bg); color: #fff; font-weight: 700; }
-.vade-bugun  { border-left: 6px solid var(--vade-bugun-cl);  background: var(--vade-bugun-bg);  color: #fff; font-weight: 700; }
-.vade-1      { border-left: 6px solid var(--vade-1-cl);      background: var(--vade-1-bg);      }
-.vade-3      { border-left: 6px solid var(--vade-3-cl);      background: var(--vade-3-bg);      }
-.vade-7      { border-left: 6px solid var(--vade-7-cl);      background: var(--vade-7-bg);      }
-.vade-30     { border-left: 6px solid var(--vade-30-cl);     background: var(--vade-30-bg);     }
+.vade-gecmis { background: var(--vade-gecmis-bg); color: #fff; font-weight: 700; }
+.vade-bugun  { background: var(--vade-bugun-bg);  color: #fff; font-weight: 700; }
+.vade-1      { background: var(--vade-1-bg);      }
+.vade-3      { background: var(--vade-3-bg);      }
+.vade-7      { background: var(--vade-7-bg);      }
+.vade-30     { background: var(--vade-30-bg);     }
 
 /* Faz 4.23a: Yaklaşan Ödemeler — kenardan kenara renk */
 /* Card overflow: köşelerde clipping için */
