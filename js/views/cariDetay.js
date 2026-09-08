@@ -149,7 +149,7 @@ function vadeSection(cariId, vadeler, today, bakiye) {
 
 function hareketItemHtml(h, kasalar) {
   const kasa    = kasalar.find(k => k.id === h.kasaId);
-  const label   = ETKI_LABEL[h.cariEtkisi] || h.cariEtkisi;
+  const label   = h.maasTuru === 'odeme' ? '💸 Maaş Ödemesi' : h.maasTuru === 'mahsup' ? '💳 Avans Mahsubu' : ETKI_LABEL[h.cariEtkisi] || h.cariEtkisi;
   const tutar   = h.tutar || 0;
   const isGelir = h.tip === 'gelir';
   const cls     = isGelir ? 'income' : 'expense';
@@ -615,3 +615,4 @@ function openCariIslemForm(cari, etkiTipi, vade = null, onayTutar = null) {
 export function openOdemeFormu(cari, vade) {
   openCariIslemForm(cari, 'odeme', vade, vade.tutar);
 }
+

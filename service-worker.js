@@ -1,5 +1,5 @@
 // Cache versiyonunu her deploy'da güncelle → eski cache otomatik silinir
-const CACHE = 'defter-pro-v1';
+const CACHE = 'defter-pro-v2-maas';
 
 // Install: hemen aktif ol, eski tab'ların kapanmasını bekleme
 self.addEventListener('install', e => {
@@ -40,3 +40,4 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(e.request))
   );
 });
+

@@ -692,7 +692,7 @@ export function cariHareketleriFiltrele(islemler, cariId, arama, tarihFiltre, ti
     if (tipFiltre === 'borc') {
       liste = liste.filter(i => i.cariEtkisi === 'borc_yaz' || i.cariEtkisi === 'borc_cikar');
     } else if (tipFiltre === 'odeme') {
-      liste = liste.filter(i => i.cariEtkisi === 'odeme');
+      liste = liste.filter(i => i.cariEtkisi === 'odeme' || i.maasTuru === 'odeme');
     } else if (tipFiltre === 'tahsilat') {
       liste = liste.filter(i => i.cariEtkisi === 'tahsilat' || i.cariEtkisi === 'avans_ver');
     }
@@ -889,3 +889,4 @@ export function autoLockSureGetir() {
 export function autoLockSureKaydet(sn) {
   localStorage.setItem('defter-autolock-sn', String(sn));
 }
+

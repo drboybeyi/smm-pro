@@ -1,3 +1,4 @@
+import { maasOzeti } from '../maas.js';
 import { getKasalar, getKategoriler, getIslemler, getCariler, getSabitGiderler } from '../state.js';
 import { hesaplaCariBakiye, formatTL, bugun, odendiIsaretle, odendiKontrol, vadeRengiSinifi, sabitGiderSonrakiOdeme, buAyOdemeTarihi } from '../utils.js';
 import { addIslem, updateSabitGider } from '../db.js';
@@ -6,29 +7,6 @@ import { openMaasOde } from './maasOde.js';
 
 const AYLAR_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                   'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-
-function getMaasKatIds(kategoriler) {
-  return new Set(
-    kategoriler
-      .filter(k => k.tip === 'gider' &&
-        (k.ad.toLowerCase().includes('maaş') || k.ad.toLowerCase().includes('maas') ||
-         k.ad.toLowerCase().includes('personel')))
-      .map(k => k.id)
-  );
-}
-
-function maasOdenmiMi(cari, ayStr, islemler, kategoriler) {
-  const [yStr, mStr] = ayStr.split('-');
-  if (odendiKontrol('personel', cari.id, parseInt(yStr), parseInt(mStr))) return true;
-  const katIds = getMaasKatIds(kategoriler);
-  return islemler.some(i => {
-    if (!i.tarih?.startsWith(ayStr)) return false;
-    if (i.cariId === cari.id && i.cariEtkisi === 'tahsilat') return true;
-    if (i.tip === 'gider' && katIds.has(i.kategoriId) &&
-        i.aciklama?.toLowerCase().includes(cari.ad.toLowerCase())) return true;
-    return false;
-  });
-}
 
 function sabitGiderOdenmiMi(sg, ayStr, islemler) {
   const [yStr, mStr] = ayStr.split('-');
@@ -46,13 +24,13 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
 
   const bekleyenMaaslar = cariler
     .filter(c => c.tip === 'personel' && !c.silindi)
-    .filter(c => !maasOdenmiMi(c, ayStr, islemler, kategoriler))
     .map(c => {
-      const avans = Math.max(0, hesaplaCariBakiye(c.id, islemler));
-      const brut  = c.sabitBrutMaas || null;
-      const net   = brut !== null ? Math.max(0, brut - avans) : null;
-      return { ...c, avans, brut, net };
-    });
+      const o = maasOzeti(c, islemler, ayStr, today);
+      return { ...c, avans: o.mahsup, brut: o.aylik || null,
+        net: o.aylik ? Math.max(0, o.kalan - o.mahsup) : null,
+        karsilanan: o.odenen + o.eski, kalan: o.kalan };
+    })
+    .filter(c => !c.brut || c.kalan > 0);
 
   const bekleyenSabitler = sabitGiderler
     .filter(sg => sg.aktif !== false && !sg.silindi)
@@ -79,12 +57,11 @@ export function renderBuAyOdemeKarti(cariler, sabitGiderler, islemler, kategoril
           <div class="bay-satir-ad">👤 ${p.ad}</div>
           <div class="bay-satir-detay">${
             p.brut !== null
-              ? `Brüt ${formatTL(p.brut)}${p.avans > 0.01 ? ` · Avans ${formatTL(p.avans)}` : ''}${p.net !== p.brut ? ` → Net ${formatTL(p.net)}` : ''}`
-              : 'Brüt maaş belirtilmedi'
+              ? `Net maaş ${formatTL(p.brut)} · Ödenen ${formatTL(p.karsilanan)}${p.avans > 0.01 ? ` · Avans ${formatTL(p.avans)}` : ''}${p.net !== p.brut ? ` → Kalan ${formatTL(p.net)}` : ''}`
+              : 'Net maaş belirtilmedi'
           }</div>
         </div>
         <div class="bay-satir-butonlar">
-          <button class="odendi-isaretle-btn" data-type="maas" data-id="${p.id}">✓ Ödendi</button>
           <button class="btn btn-sm btn-primary bay-ode-btn"
             data-type="maas" data-id="${p.id}">Öde →</button>
         </div>
@@ -275,3 +252,4 @@ function openSabitGiderOdeFormu(sg) {
 
   setTimeout(() => overlay.querySelector('#sgo-tutar')?.focus(), 80);
 }
+

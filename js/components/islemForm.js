@@ -116,6 +116,11 @@ function buildHTML(kasalar, title, saveLabel, isEdit) {
 // ─── Ana Fonksiyon ─────────────────────────────────────────────
 
 export function openIslemForm(defaultTip = 'gider', islemToEdit = null) {
+  if (islemToEdit?.maasGrupId) {
+    showToast('Maaş kaydını düzeltmek için işlem detayından silip Maaş Öde ekranından yeniden girin.', 'info');
+    return;
+  }
+
   if (document.getElementById('islem-form-overlay')) return;
 
   const kasalar     = getKasalar();
@@ -450,3 +455,4 @@ export function openIslemForm(defaultTip = 'gider', islemToEdit = null) {
 
   setTimeout(() => overlay.querySelector('#if-tutar')?.focus(), 80);
 }
+
