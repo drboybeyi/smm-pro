@@ -1,5 +1,6 @@
+import { maasKaydiEkle } from './maas.js';
 import { db } from './firebase-config.js';
-import { ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { ref, push, set, update, remove, onValue, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 const USER_PATH = 'users/';
 let currentUserId = null;
@@ -266,4 +267,15 @@ export async function vadeleriOdendiYap(vadeId, odemeIslemId) {
     durum: 'odendi',
     odemeIslemId,
   });
+}
+
+
+// Maaş, kasa dağılımı ve avans mahsup kayıtları birlikte tamamlanır.
+export async function addMaasOdeme(request, ids) {
+  const target = ref(db, getUserPath('islemler'));
+  await get(target);
+  const result = await runTransaction(target, current => maasKaydiEkle(current, request, ids), { applyLocally: false });
+  if (!result.committed || !result.snapshot.child(ids[0]).exists()) {
+    throw new Error('Maaş veya avans bilgisi değişti. Tutarları kontrol edip yeniden deneyin.');
+  }
 }

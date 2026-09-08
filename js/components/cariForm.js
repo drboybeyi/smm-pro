@@ -49,9 +49,9 @@ export function openCariForm(cariToEdit = null) {
             placeholder="Not..." value="${cariToEdit?.notlar || ''}">
         </div>
         <div class="form-group" id="cf-brut-group" style="display:none">
-          <label class="form-label">Sabit Brüt Maaş <span class="form-label-opt">(isteğe bağlı)</span></label>
+          <label class="form-label">Aylık Net Maaş <span class="form-label-opt">(isteğe bağlı)</span></label>
           <input class="form-control" id="cf-brut" type="number"
-            step="0.01" min="0" inputmode="decimal" placeholder="Aylık brüt maaş..."
+            step="0.01" min="0" inputmode="decimal" placeholder="Personelin eline geçecek maaş..."
             value="${cariToEdit?.sabitBrutMaas || ''}">
           <p style="font-size:11px;color:var(--text-secondary);margin-top:3px">Doldurulursa "Bu Ay Ödemelerim" kartında görünür</p>
         </div>
@@ -171,3 +171,4 @@ export function openCariForm(cariToEdit = null) {
 
   setTimeout(() => overlay.querySelector('#cf-ad')?.focus(), 80);
 }
+

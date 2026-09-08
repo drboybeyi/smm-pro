@@ -1,3 +1,4 @@
+import { maasOzeti } from '../maas.js';
 import { getCariler, getSabitGiderler, getVadeler, getIslemler, getKategoriler, getKasalar } from '../state.js';
 import { bugun, formatTL, formatTarih, odendiIsaretle, odendiKontrol, gunFarki, buAyOdemeTarihi, hesaplaCariBakiye } from '../utils.js';
 import { addIslem, updateSabitGider } from '../db.js';
@@ -7,16 +8,6 @@ import { openOdemeFormu } from './cariDetay.js';
 
 const AYLAR_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
                   'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-
-function getMaasKatIds(kategoriler) {
-  return new Set(
-    kategoriler
-      .filter(k => k.tip === 'gider' &&
-        (k.ad.toLowerCase().includes('maaş') || k.ad.toLowerCase().includes('maas') ||
-         k.ad.toLowerCase().includes('personel')))
-      .map(k => k.id)
-  );
-}
 
 function gecikmisItemleriGetir() {
   const today  = bugun();
@@ -52,27 +43,17 @@ function gecikmisItemleriGetir() {
   }
 
   // Personel maaşları: bu ay maaş günü geçmiş, ödenmemiş
-  const katIds = getMaasKatIds(kategoriler);
   for (const cari of cariler) {
     if (cari.tip !== 'personel' || cari.silindi || !cari.sabitBrutMaas) continue;
-    if (odendiKontrol('personel', cari.id, yil, ay)) continue;
-    const maasOdendi = islemler.some(i => {
-      if (!i.tarih?.startsWith(ayStr)) return false;
-      if (i.cariId === cari.id && i.cariEtkisi === 'tahsilat') return true;
-      if (i.tip === 'gider' && katIds.has(i.kategoriId) &&
-          i.aciklama?.toLowerCase().includes(cari.ad.toLowerCase())) return true;
-      return false;
-    });
-    if (maasOdendi) continue;
+    const ozet = maasOzeti(cari, islemler, ayStr, today);
+    if (ozet.kalan === 0) continue;
     const odemeTarih = buAyOdemeTarihi(cari.maasOdemeGunu || 5);
     if (!odemeTarih || odemeTarih >= today) continue;
-    const avans = Math.max(0, hesaplaCariBakiye(cari.id, islemler));
-    const brut  = cari.sabitBrutMaas || 0;
-    const net   = Math.max(0, brut - avans);
+    const net = Math.max(0, ozet.kalan - ozet.mahsup);
     items.push({
       tip: 'maas', id: cari.id, cari,
       ad: `👤 ${cari.ad}`,
-      tutar: net || brut,
+      tutar: net,
       vadeTarih: odemeTarih,
       gecGun: gunFarki(today, odemeTarih)
     });
@@ -114,7 +95,7 @@ export function renderGecikmisOdemelerKarti() {
         <div class="dash-gecikmis-meta">${gecGunMetni(item.gecGun)} · ${formatTarih(item.vadeTarih)}${item.tutar ? ` · ${formatTL(item.tutar)}` : ''}</div>
       </div>
       <div class="dash-gecikmis-butonlar">
-        ${item.tip !== 'vade'
+        ${item.tip === 'sabit'
           ? `<button class="dash-gecikmis-isaretle" data-tip="${item.tip}" data-id="${item.id}">✓</button>`
           : ''}
         <button class="dash-gecikmis-ode" data-tip="${item.tip}" data-id="${item.id}">Öde →</button>
@@ -266,3 +247,4 @@ function _openSabitGiderOde(sg, ayStr) {
 
   setTimeout(() => overlay.querySelector('#gec-sgo-tutar')?.focus(), 80);
 }
+
